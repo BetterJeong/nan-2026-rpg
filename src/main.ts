@@ -283,7 +283,23 @@ function escapeHtml(s: string): string {
     .replace(/"/g, '&quot;')
 }
 
-renderShell()
-welcome(state)
-refresh()
-document.querySelector<HTMLInputElement>('#cli')?.focus()
+function showFatal(err: unknown): void {
+  const detail = err instanceof Error ? `${err.name}: ${err.message}` : String(err)
+  app.innerHTML = `<pre style="padding:24px;color:#f14c4c;white-space:pre-wrap">
+게임 초기화 실패
+
+${escapeHtml(detail)}
+
+브라우저 콘솔(F12)의 메시지를 확인해 주세요.
+저장 데이터가 손상된 경우 localStorage 를 비우면 복구됩니다.</pre>`
+}
+
+try {
+  renderShell()
+  welcome(state)
+  refresh()
+  document.querySelector<HTMLInputElement>('#cli')?.focus()
+} catch (err) {
+  showFatal(err)
+  throw err
+}

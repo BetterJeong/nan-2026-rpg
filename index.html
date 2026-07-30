@@ -4,15 +4,39 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>DevQuest — IDE RPG</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;600;700&display=swap"
-      rel="stylesheet"
-    />
+    <style>
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        background: #1e1e1e;
+        color: #cccccc;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      }
+      #boot {
+        padding: 24px;
+        font-size: 13px;
+        line-height: 1.7;
+        white-space: pre-wrap;
+      }
+      #boot b {
+        color: #4ec9b0;
+      }
+      #boot code {
+        color: #9cdcfe;
+      }
+    </style>
   </head>
   <body>
-    <div id="app"></div>
-    <script type="module" src="/src/main.ts"></script>
+    <div id="app">
+      <div id="boot">
+        <b>DevQuest</b> 로딩 중...
+
+        이 화면이 사라지지 않는다면 개발 서버를 통해 열어야 합니다.
+        <code>npm run dev</code> 실행 후 터미널에 표시된 주소로 접속하세요.
+        (파일을 직접 열면 <code>file://</code> 제약으로 실행되지 않습니다.)
+      </div>
+    </div>
+    <script type="module" src="./src/main.ts"></script>
   </body>
 </html>

@@ -1,8 +1,8 @@
 import { defineConfig } from 'vite'
 
-// GitHub Pages: 리포지토리명이 서브패스가 됩니다.
+// 상대 경로 base: GitHub Pages 서브패스와 로컬 파일 열기 모두 동작합니다.
 export default defineConfig({
-  base: '/nan-2026-rpg/',
+  base: './',
   build: {
     outDir: 'dist',
   },

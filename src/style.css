@@ -24,8 +24,9 @@
   --hp: #f44747;
   --mp: #569cd6;
   --exp: #b5cea8;
-  --font-ui: "Noto Sans KR", "Segoe UI", sans-serif;
-  --font-mono: "JetBrains Mono", "Consolas", "Courier New", monospace;
+  --font-ui: "Apple SD Gothic Neo", "Malgun Gothic", "Segoe UI", system-ui, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "D2Coding",
+    "Courier New", monospace;
   --sidebar-w: 220px;
   --inspector-w: 260px;
   --activity-w: 48px;
