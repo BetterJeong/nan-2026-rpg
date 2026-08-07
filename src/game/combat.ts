@@ -7,6 +7,7 @@ import {
   getEffectiveMaxHp,
   getTotalAtk,
   getTotalDef,
+  isErrorMsg,
   useConsumable,
 } from './player'
 
@@ -29,7 +30,7 @@ export function startCombat(monsterId: string): CombatState {
     monsterMaxHp: m.hp,
     playerDefending: false,
     turn: 'player',
-    log: [`야생의 ${m.name}(Lv.${m.level})이(가) 나타났다!`],
+    log: [`A wild ${m.name} (Lv.${m.level}) appears!`],
   }
 }
 
@@ -44,7 +45,9 @@ export function playerAttack(player: PlayerState, combat: CombatState): CombatRe
   const m = MONSTERS[combat.monsterId]
   const dmg = calcDamage(getTotalAtk(player), m.def)
   combat.monsterHp = Math.max(0, combat.monsterHp - dmg)
-  const messages = [`기본 공격! ${m.name}에게 ${dmg} 피해. (적 HP ${combat.monsterHp}/${combat.monsterMaxHp})`]
+  const messages = [
+    `attack -> ${m.name} took ${dmg} dmg. (HP ${combat.monsterHp}/${combat.monsterMaxHp})`,
+  ]
   combat.playerDefending = false
 
   if (combat.monsterHp <= 0) {
@@ -59,12 +62,15 @@ export function playerSkill(
   skillId: string,
 ): CombatResult {
   const skill = SKILLS[skillId]
-  if (!skill) return { messages: ['알 수 없는 스킬입니다.'], ended: false }
+  if (!skill) return { messages: ['error: unknown skill'], ended: false }
   if (!player.skills.includes(skillId)) {
-    return { messages: ['아직 해금되지 않은 스킬입니다.'], ended: false }
+    return { messages: ['error: skill not unlocked'], ended: false }
   }
   if (player.mp < skill.mpCost) {
-    return { messages: [`마나가 부족합니다. (필요 MP ${skill.mpCost}, 현재 ${player.mp})`], ended: false }
+    return {
+      messages: [`error: not enough MP (need ${skill.mpCost}, have ${player.mp})`],
+      ended: false,
+    }
   }
 
   player.mp -= skill.mpCost
@@ -76,9 +82,7 @@ export function playerSkill(
     const maxHp = getEffectiveMaxHp(player)
     const before = player.hp
     player.hp = Math.min(maxHp, player.hp + skill.heal)
-    messages.push(
-      `${skill.name}! HP ${before} → ${player.hp} (MP -${skill.mpCost})`,
-    )
+    messages.push(`${skill.name}! HP ${before} -> ${player.hp} (MP -${skill.mpCost})`)
     return enemyTurn(player, combat, messages)
   }
 
@@ -88,7 +92,7 @@ export function playerSkill(
   const dmg = calcDamage(atk, m.def, 0.12)
   combat.monsterHp = Math.max(0, combat.monsterHp - dmg)
   messages.push(
-    `${skill.name}! ${m.name}에게 ${dmg} 피해. (MP -${skill.mpCost}, 적 HP ${combat.monsterHp}/${combat.monsterMaxHp})`,
+    `${skill.name}! ${m.name} took ${dmg} dmg. (MP -${skill.mpCost}, HP ${combat.monsterHp}/${combat.monsterMaxHp})`,
   )
 
   if (combat.monsterHp <= 0) {
@@ -99,7 +103,7 @@ export function playerSkill(
 
 export function playerDefend(player: PlayerState, combat: CombatState): CombatResult {
   combat.playerDefending = true
-  const messages = ['방어 태세! 이번 적의 공격 피해가 절반이 됩니다.']
+  const messages = ['defend: incoming damage halved this turn']
   return enemyTurn(player, combat, messages)
 }
 
@@ -109,11 +113,11 @@ export function playerUseItem(
   itemId: string,
 ): CombatResult {
   const result = useConsumable(player, itemId)
-  if (!result || result.includes('없습니다') || result.includes('아닙니다')) {
-    return { messages: [result ?? '사용 실패'], ended: false }
+  if (isErrorMsg(result)) {
+    return { messages: [result ?? 'error: use failed'], ended: false }
   }
   combat.playerDefending = false
-  return enemyTurn(player, combat, [result])
+  return enemyTurn(player, combat, [result!])
 }
 
 export function playerFlee(player: PlayerState, combat: CombatState): CombatResult {
@@ -121,12 +125,12 @@ export function playerFlee(player: PlayerState, combat: CombatState): CombatResu
   const chance = Math.max(0.25, 0.55 - (m.level - player.level) * 0.08)
   if (Math.random() < chance) {
     return {
-      messages: [`도망에 성공했다!`],
+      messages: ['flee: success'],
       ended: true,
       fled: true,
     }
   }
-  const messages = ['도망에 실패했다!']
+  const messages = ['flee: failed']
   combat.playerDefending = false
   return enemyTurn(player, combat, messages)
 }
@@ -140,22 +144,22 @@ function enemyTurn(
   let dmg = calcDamage(m.atk, getTotalDef(player))
   if (combat.playerDefending) {
     dmg = Math.max(1, Math.floor(dmg * 0.5))
-    messages.push(`(방어) ${m.name}의 공격! ${dmg} 피해를 입었다.`)
+    messages.push(`(guard) ${m.name} hits for ${dmg}`)
   } else {
-    messages.push(`${m.name}의 공격! ${dmg} 피해를 입었다.`)
+    messages.push(`${m.name} hits for ${dmg}`)
   }
   combat.playerDefending = false
   player.hp = Math.max(0, player.hp - dmg)
-  messages.push(`내 HP ${player.hp}/${getEffectiveMaxHp(player)}`)
+  messages.push(`your HP ${player.hp}/${getEffectiveMaxHp(player)}`)
 
   if (player.hp <= 0) {
-    messages.push('당신은 쓰러졌다... 마을에서 부활합니다. (골드 20% 손실)')
+    messages.push('you were defeated... respawning in town (lost 20% gold)')
     const loss = Math.floor(player.gold * 0.2)
     player.gold -= loss
     player.hp = Math.max(1, Math.floor(getEffectiveMaxHp(player) * 0.5))
     player.mp = Math.floor(player.mp * 0.5)
     player.location = 'town'
-    messages.push(`골드 -${loss}G → ${player.gold}G | 마을로 이동했습니다.`)
+    messages.push(`gold -${loss}G -> ${player.gold}G | cd ~/town`)
     return { messages, ended: true, victory: false }
   }
 
@@ -168,18 +172,18 @@ function finishVictory(
   messages: string[],
 ): CombatResult {
   const m = MONSTERS[combat.monsterId]
-  messages.push(`${m.name}을(를) 처치했다!`)
+  messages.push(`${m.name} defeated`)
 
   const gold = randInt(m.goldMin, m.goldMax)
   player.gold += gold
   player.exp += m.exp
-  messages.push(`경험치 +${m.exp} | 골드 +${gold}G`)
+  messages.push(`+${m.exp} EXP | +${gold}G`)
 
   if (Math.random() < m.dropChance && m.dropIds.length) {
     const dropId = m.dropIds[Math.floor(Math.random() * m.dropIds.length)]
     addItem(player, dropId, 1)
     const item = getItem(dropId)
-    messages.push(`드롭: ${item?.name ?? dropId}`)
+    messages.push(`loot: ${item?.name ?? dropId}`)
   }
 
   const levelLogs = applyLevelUps(player)
@@ -194,7 +198,6 @@ export function resolveSkillQuery(query: string, player: PlayerState): string | 
     const s = SKILLS[id]
     if (s.id === q || s.name.toLowerCase() === q || s.name === query.trim()) return id
   }
-  // allow unlocking check by name even if not owned — return id if exists in SKILLS
   for (const s of Object.values(SKILLS)) {
     if (s.id === q || s.name.toLowerCase() === q || s.name === query.trim()) return s.id
   }

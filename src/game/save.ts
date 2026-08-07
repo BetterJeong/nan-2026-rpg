@@ -28,12 +28,12 @@ export function saveGame(state: GameState): string {
     combat: null,
     savedAt: new Date().toISOString(),
   }
-  // 전투 중 저장 시 전투는 취소하고 현재 위치 유지
+  // If saving mid-combat, drop combat and keep current location
   if (state.mode === 'combat') {
     payload.mode = 'idle'
   }
   localStorage.setItem(SAVE_KEY, JSON.stringify(payload))
-  return '게임을 저장했습니다. (localStorage)'
+  return 'game saved. (localStorage)'
 }
 
 export function loadGame(): GameState | null {

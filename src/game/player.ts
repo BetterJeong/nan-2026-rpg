@@ -97,9 +97,9 @@ export function removeItem(player: PlayerState, itemId: string, qty = 1): boolea
 export function useConsumable(player: PlayerState, itemId: string): string | null {
   const item = getItem(itemId)
   if (!item || item.kind !== 'consumable' || !item.effect) {
-    return '사용할 수 있는 소모품이 아닙니다.'
+    return 'error: not a usable consumable'
   }
-  if (inventoryQty(player, itemId) < 1) return '해당 아이템이 없습니다.'
+  if (inventoryQty(player, itemId) < 1) return 'error: item not found'
 
   removeItem(player, itemId, 1)
   const maxHp = getEffectiveMaxHp(player)
@@ -109,23 +109,23 @@ export function useConsumable(player: PlayerState, itemId: string): string | nul
   if (item.effect.healHp) {
     const before = player.hp
     player.hp = Math.min(maxHp, player.hp + item.effect.healHp)
-    parts.push(`HP ${before} → ${player.hp}`)
+    parts.push(`HP ${before} -> ${player.hp}`)
   }
   if (item.effect.healMp) {
     const before = player.mp
     player.mp = Math.min(maxMp, player.mp + item.effect.healMp)
-    parts.push(`MP ${before} → ${player.mp}`)
+    parts.push(`MP ${before} -> ${player.mp}`)
   }
 
-  return `${item.name} 사용. ${parts.join(', ')}`
+  return `used ${item.name}. ${parts.join(', ')}`
 }
 
 export function equipItem(player: PlayerState, itemId: string): string {
   const item = getItem(itemId)
   if (!item || item.kind !== 'equipment' || !item.slot) {
-    return '장착할 수 있는 장비가 아닙니다.'
+    return 'error: not equippable'
   }
-  if (inventoryQty(player, itemId) < 1) return '해당 아이템이 없습니다.'
+  if (inventoryQty(player, itemId) < 1) return 'error: item not found'
 
   const slot = item.slot as EquipSlot
   const prev = player.equipment[slot]
@@ -133,18 +133,20 @@ export function equipItem(player: PlayerState, itemId: string): string {
   if (prev) addItem(player, prev, 1)
   player.equipment[slot] = itemId
   clampVitals(player)
-  return `${item.name}을(를) 장착했습니다.${prev ? ` (해제: ${getItem(prev)?.name})` : ''}`
+  return `equipped ${item.name}${prev ? ` (unequipped ${getItem(prev)?.name})` : ''}`
 }
 
 export function unequipItem(player: PlayerState, slotOrName: string): string {
   const slot = resolveSlot(slotOrName)
-  if (!slot) return '올바른 장비 부위가 아닙니다. (모자/상의/하의/신발/장갑/무기/반지/목걸이)'
+  if (!slot) {
+    return 'error: invalid slot (helmet|armor|legs|boots|gloves|weapon|ring|necklace)'
+  }
   const id = player.equipment[slot]
-  if (!id) return '해당 부위에 장착된 장비가 없습니다.'
+  if (!id) return 'error: nothing equipped in that slot'
   delete player.equipment[slot]
   addItem(player, id, 1)
   clampVitals(player)
-  return `${getItem(id)?.name}을(를) 해제했습니다.`
+  return `unequipped ${getItem(id)?.name}`
 }
 
 function resolveSlot(q: string): EquipSlot | null {
@@ -184,12 +186,12 @@ export function applyLevelUps(player: PlayerState): string[] {
     for (const skill of Object.values(SKILLS)) {
       if (skill.unlockLevel === player.level && !player.skills.includes(skill.id)) {
         player.skills.push(skill.id)
-        logs.push(`새 스킬 해금: ${skill.name}`)
+        logs.push(`skill unlocked: ${skill.name}`)
       }
     }
 
     logs.push(
-      `레벨 업! Lv.${player.level} | ATK ${player.baseAtk} / DEF ${player.baseDef} | HP·MP 완전 회복`,
+      `level up! Lv.${player.level} | ATK ${player.baseAtk} / DEF ${player.baseDef} | HP/MP restored`,
     )
   }
   return logs
@@ -217,4 +219,8 @@ export function findOwnedOrEquipped(player: PlayerState, query: string): string 
     }
   }
   return null
+}
+
+export function isErrorMsg(msg: string | null | undefined): boolean {
+  return !!msg && msg.startsWith('error:')
 }

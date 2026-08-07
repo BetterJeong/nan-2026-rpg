@@ -37,7 +37,7 @@ function renderShell(): void {
         <div class="cli-input-row">
           <span class="cli-prompt" id="prompt">player@town:~$</span>
           <input class="cli-input" id="cli" type="text" autocomplete="off" spellcheck="false"
-            placeholder="명령어 입력 (help)" autofocus />
+            placeholder="type a command (help)" autofocus />
         </div>
       </main>
       <aside class="inspector" id="inspector"></aside>
@@ -45,7 +45,7 @@ function renderShell(): void {
     <footer class="statusbar">
       <div class="statusbar-left">
         <span>⎇ main*</span>
-        <span id="sb-loc">마을</span>
+        <span id="sb-loc">town</span>
       </div>
       <div class="statusbar-right">
         <span>UTF-8</span>
@@ -58,7 +58,7 @@ function renderShell(): void {
   const cli = document.querySelector<HTMLInputElement>('#cli')!
   cli.addEventListener('keydown', onKeyDown)
 
-  // Explorer 클릭으로 이동
+  // Explorer click -> command
   document.querySelector('#explorer')!.addEventListener('click', (e) => {
     const t = (e.target as HTMLElement).closest('.tree-item') as HTMLElement | null
     if (!t || t.classList.contains('locked')) return
@@ -166,10 +166,10 @@ function renderExplorer(): void {
     <div class="explorer-section">
       <div class="explorer-section-title">WORLD</div>
       <div class="tree-item ${loc === 'town' || loc === 'shop' ? 'active' : ''}" data-cmd="town">
-        <span class="icon">🏠</span>마을
+        <span class="icon">🏠</span>town
       </div>
       <div class="tree-item ${loc === 'shop' ? 'active' : ''}" data-cmd="shop">
-        <span class="icon">🛒</span>상점
+        <span class="icon">🛒</span>shop
       </div>
       ${zonesHtml}
     </div>
@@ -181,7 +181,7 @@ function renderExplorer(): void {
       <div class="tree-item" data-cmd="help"><span class="icon">❓</span>help</div>
       <div class="tree-item" data-cmd="save"><span class="icon">💾</span>save</div>
     </div>
-    <p class="tree-hint">클릭하거나 CLI에 명령어를 입력하세요.</p>
+    <p class="tree-hint">Click a node or type a command in the CLI.</p>
   `
 }
 
@@ -254,7 +254,7 @@ function renderInspector(): void {
               (p.inventory.length > 12
                 ? `<div class="insp-row"><span class="k">…</span><span class="v">+${p.inventory.length - 12}</span></div>`
                 : '')
-            : '<div class="insp-row"><span class="k">(비어 있음)</span></div>'
+            : '<div class="insp-row"><span class="k">(empty)</span></div>'
         }
       </div>
     </div>
@@ -266,9 +266,9 @@ function updatePrompt(): void {
   const path =
     state.mode === 'combat'
       ? 'combat'
-      : h.location === '마을'
+      : h.location === 'town'
         ? '~'
-        : h.location === '상점'
+        : h.location === 'shop'
           ? '~/shop'
           : `~/zones/${h.location}`
   const el = document.querySelector('#prompt')
@@ -286,12 +286,12 @@ function escapeHtml(s: string): string {
 function showFatal(err: unknown): void {
   const detail = err instanceof Error ? `${err.name}: ${err.message}` : String(err)
   app.innerHTML = `<pre style="padding:24px;color:#f14c4c;white-space:pre-wrap">
-게임 초기화 실패
+boot failed
 
 ${escapeHtml(detail)}
 
-브라우저 콘솔(F12)의 메시지를 확인해 주세요.
-저장 데이터가 손상된 경우 localStorage 를 비우면 복구됩니다.</pre>`
+Check the browser console (F12).
+If the save is corrupt, clear localStorage and reload.</pre>`
 }
 
 try {

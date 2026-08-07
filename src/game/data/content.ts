@@ -1,38 +1,37 @@
 import type { MonsterDef, SkillDef, ZoneDef } from '../types'
 
-/** 초저렙 스킬 */
 export const SKILLS: Record<string, SkillDef> = {
   slash: {
     id: 'slash',
-    name: '슬래시',
+    name: 'slash',
     mpCost: 5,
     power: 1.6,
-    description: '강한 일격. 공격력의 160% 피해. (MP 5)',
+    description: 'Heavy strike. 160% ATK damage. (MP 5)',
     unlockLevel: 1,
   },
   focus: {
     id: 'focus',
-    name: '포커스',
+    name: 'focus',
     mpCost: 8,
     power: 1.3,
     bonus: 4,
-    description: '집중 공격. 공격력 130% + 4 피해. (MP 8)',
+    description: 'Focused hit. 130% ATK + 4 damage. (MP 8)',
     unlockLevel: 3,
   },
   mend: {
     id: 'mend',
-    name: '멘드',
+    name: 'mend',
     mpCost: 10,
     heal: 35,
-    description: '상처를 회복한다. HP 35 회복. (MP 10)',
+    description: 'Restore wounds. Heal 35 HP. (MP 10)',
     unlockLevel: 2,
   },
   bash: {
     id: 'bash',
-    name: '배시',
+    name: 'bash',
     mpCost: 12,
     power: 2.0,
-    description: '강력한 강타. 공격력의 200% 피해. (MP 12)',
+    description: 'Crushing blow. 200% ATK damage. (MP 12)',
     unlockLevel: 5,
   },
 }
@@ -40,7 +39,7 @@ export const SKILLS: Record<string, SkillDef> = {
 export const MONSTERS: Record<string, MonsterDef> = {
   slime: {
     id: 'slime',
-    name: '슬라임',
+    name: 'slime',
     level: 1,
     hp: 22,
     atk: 6,
@@ -53,7 +52,7 @@ export const MONSTERS: Record<string, MonsterDef> = {
   },
   forest_bug: {
     id: 'forest_bug',
-    name: '숲 벌레',
+    name: 'forest-bug',
     level: 1,
     hp: 18,
     atk: 7,
@@ -66,7 +65,7 @@ export const MONSTERS: Record<string, MonsterDef> = {
   },
   wolf_pup: {
     id: 'wolf_pup',
-    name: '새끼 늑대',
+    name: 'wolf-pup',
     level: 2,
     hp: 30,
     atk: 9,
@@ -79,7 +78,7 @@ export const MONSTERS: Record<string, MonsterDef> = {
   },
   wild_boar: {
     id: 'wild_boar',
-    name: '멧돼지',
+    name: 'wild-boar',
     level: 3,
     hp: 42,
     atk: 12,
@@ -92,7 +91,7 @@ export const MONSTERS: Record<string, MonsterDef> = {
   },
   goblin: {
     id: 'goblin',
-    name: '고블린',
+    name: 'goblin',
     level: 3,
     hp: 38,
     atk: 13,
@@ -105,7 +104,7 @@ export const MONSTERS: Record<string, MonsterDef> = {
   },
   forest_spider: {
     id: 'forest_spider',
-    name: '숲 거미',
+    name: 'forest-spider',
     level: 4,
     hp: 48,
     atk: 15,
@@ -118,7 +117,7 @@ export const MONSTERS: Record<string, MonsterDef> = {
   },
   elder_wolf: {
     id: 'elder_wolf',
-    name: '늙은 늑대',
+    name: 'elder-wolf',
     level: 5,
     hp: 62,
     atk: 18,
@@ -131,7 +130,7 @@ export const MONSTERS: Record<string, MonsterDef> = {
   },
   treant_sapling: {
     id: 'treant_sapling',
-    name: '어린 트리언트',
+    name: 'treant-sapling',
     level: 6,
     hp: 78,
     atk: 16,
@@ -147,41 +146,48 @@ export const MONSTERS: Record<string, MonsterDef> = {
 export const ZONES: Record<string, ZoneDef> = {
   forest1: {
     id: 'forest1',
-    name: '숲1',
+    name: 'forest1',
     minLevel: 1,
-    description: '초보 모험가를 위한 얕은 숲. (권장 Lv.1+)',
+    description: 'Shallow woods for beginners. (rec. Lv.1+)',
     monsters: ['slime', 'forest_bug', 'wolf_pup'],
     forageItems: ['hp_potion_s', 'mp_potion_s', 'cloth_cap', 'straw_boots', 'wood_sword'],
     goldMin: 5,
     goldMax: 15,
+    aliases: ['숲1'],
   },
   forest2: {
     id: 'forest2',
-    name: '숲2',
+    name: 'forest2',
     minLevel: 3,
-    description: '위험이 깃든 깊은 숲. (권장 Lv.3+)',
+    description: 'Deeper forest with real threats. (rec. Lv.3+)',
     monsters: ['wild_boar', 'goblin', 'forest_spider'],
     forageItems: ['hp_potion_m', 'mp_potion_m', 'leather_hood', 'leather_boots', 'rusty_dagger'],
     goldMin: 12,
     goldMax: 28,
+    aliases: ['숲2'],
   },
   forest3: {
     id: 'forest3',
-    name: '숲3',
+    name: 'forest3',
     minLevel: 5,
-    description: '강한 몬스터가 서식하는 원시림. (권장 Lv.5+)',
+    description: 'Primeval woods. Strong mobs. (rec. Lv.5+)',
     monsters: ['elder_wolf', 'treant_sapling', 'forest_spider'],
     forageItems: ['hp_potion_m', 'mp_potion_m', 'hunter_blade', 'forest_cloak', 'amber_necklace'],
     goldMin: 20,
     goldMax: 40,
+    aliases: ['숲3'],
   },
 }
 
-/** 이름 또는 id로 존 검색 */
+/** Resolve zone by id, name, or alias */
 export function findZone(query: string): ZoneDef | undefined {
   const q = query.trim().toLowerCase()
   return Object.values(ZONES).find(
-    (z) => z.id === q || z.name === query.trim() || z.name.toLowerCase() === q,
+    (z) =>
+      z.id === q ||
+      z.name.toLowerCase() === q ||
+      z.name === query.trim() ||
+      z.aliases?.some((a) => a === query.trim() || a.toLowerCase() === q),
   )
 }
 
@@ -201,8 +207,6 @@ export const SHOP_CATALOG: string[] = [
   'shop_necklace',
 ]
 
-/** 레벨업에 필요한 경험치 */
 export function expToNext(level: number): number {
-  // Lv1→2: 20, 이후 완만히 증가 (초저렙)
   return Math.floor(20 + (level - 1) * 18 + (level - 1) ** 1.5 * 4)
 }

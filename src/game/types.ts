@@ -1,4 +1,4 @@
-/** 장비 슬롯 */
+/** Equipment slot */
 export type EquipSlot =
   | 'helmet'
   | 'armor'
@@ -26,11 +26,10 @@ export type ItemDef = {
   hp?: number
   mp?: number
   effect?: ConsumableEffect
-  /** 상점 정가. 드롭 아이템은 sellValue만 사용 */
+  /** Shop list price. Drop items use sellPrice only. */
   buyPrice?: number
   sellPrice: number
   description: string
-  /** 드롭 가능 여부 */
   droppable?: boolean
   dropWeight?: number
   minZone?: number
@@ -47,9 +46,9 @@ export type SkillDef = {
   id: string
   name: string
   mpCost: number
-  /** 공격력 배수 (공격 스킬) */
+  /** ATK multiplier */
   power?: number
-  /** 고정 추가 피해 */
+  /** Flat bonus damage */
   bonus?: number
   heal?: number
   description: string
@@ -76,10 +75,11 @@ export type ZoneDef = {
   minLevel: number
   description: string
   monsters: string[]
-  /** 아이템 줍기 이벤트용 풀 */
   forageItems: string[]
   goldMin: number
   goldMax: number
+  /** Extra aliases (e.g. Korean names) */
+  aliases?: string[]
 }
 
 export type Location = 'town' | 'shop' | string
@@ -128,14 +128,14 @@ export type TerminalLine = {
 }
 
 export const SLOT_LABELS: Record<EquipSlot, string> = {
-  helmet: '모자',
-  armor: '상의',
-  legs: '하의',
-  boots: '신발',
-  gloves: '장갑',
-  weapon: '무기',
-  ring: '반지',
-  necklace: '목걸이',
+  helmet: 'helmet',
+  armor: 'armor',
+  legs: 'legs',
+  boots: 'boots',
+  gloves: 'gloves',
+  weapon: 'weapon',
+  ring: 'ring',
+  necklace: 'necklace',
 }
 
 export const SLOT_ORDER: EquipSlot[] = [
