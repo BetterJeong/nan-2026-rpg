@@ -34,6 +34,11 @@ export function classifyCommand(raw: string): PaceKind {
     cmd === 'inventory' ||
     cmd === 'i' ||
     cmd === 'skills' ||
+    cmd === 'name' ||
+    cmd === 'rename' ||
+    cmd === '닉네임' ||
+    cmd === 'nick' ||
+    cmd === 'nickname' ||
     cmd === 'settings' ||
     cmd === 'setting' ||
     cmd === 'preferences' ||

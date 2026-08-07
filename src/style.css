@@ -820,7 +820,8 @@ body.view-settings .cli-hud {
 }
 
 .setting-control select,
-.setting-control input[type='number'] {
+.setting-control input[type='number'],
+.setting-control input[type='text'] {
   min-width: 140px;
   height: 26px;
   padding: 0 8px;
@@ -833,6 +834,34 @@ body.view-settings .cli-hud {
 
 .setting-control input[type='number'] {
   width: 88px;
+}
+
+.setting-nickname {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.setting-nickname input[type='text'] {
+  width: 120px;
+  min-width: 100px;
+}
+
+.setting-nickname button {
+  height: 26px;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  background: var(--bg-input);
+  color: var(--fg);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.setting-nickname button:disabled,
+.setting-nickname input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .toggle {

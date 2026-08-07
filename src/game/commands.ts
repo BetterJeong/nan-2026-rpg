@@ -87,7 +87,7 @@ import {
   zoneLabel,
   monsterLabel,
 } from './i18n'
-import type { GameState, ItemDef } from './types'
+import type { GameState, ItemDef, PlayerState } from './types'
 import { SLOT_ORDER } from './types'
 
 function randInt(min: number, max: number): number {
@@ -442,6 +442,13 @@ export function handleCommand(state: GameState, raw: string): CommandResult {
     case 'stat':
       pushMessage(state, 'output', formatStatus(state))
       break
+
+    case 'name':
+    case 'rename':
+    case '닉네임':
+    case 'nick':
+    case 'nickname':
+      return handleRename(state, arg)
 
     case 'inv':
     case 'inventory':
@@ -1229,6 +1236,55 @@ function resolveShopItem(query: string) {
     if (itemMatchesQuery(item, raw)) return item
   }
   return undefined
+}
+
+function localDateKey(d = new Date()): string {
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
+}
+
+export function canRenameToday(player: PlayerState): boolean {
+  return player.lastNameChangeDate !== localDateKey()
+}
+
+export type RenameApplyResult =
+  | { ok: true; name: string }
+  | { ok: false; error: 'invalid' | 'same' | 'daily' }
+
+/** Shared rename rules for CLI and settings UI. */
+export function applyRename(player: PlayerState, raw: string): RenameApplyResult {
+  const next = raw.trim()
+  if (/\s/.test(next) || next.length < 2 || next.length > 12) {
+    return { ok: false, error: 'invalid' }
+  }
+  if (next === player.name) {
+    return { ok: false, error: 'same' }
+  }
+  if (!canRenameToday(player)) {
+    return { ok: false, error: 'daily' }
+  }
+  player.name = next
+  player.lastNameChangeDate = localDateKey()
+  return { ok: true, name: next }
+}
+
+function handleRename(state: GameState, raw: string): CommandResult {
+  const next = raw.trim()
+  if (!next) {
+    pushMessage(state, 'output', t('info.name', { name: state.player.name }))
+    return { state, refreshUi: true }
+  }
+  const res = applyRename(state.player, next)
+  if (!res.ok) {
+    if (res.error === 'invalid') pushMessage(state, 'error', t('err.nameInvalid'))
+    else if (res.error === 'same') pushMessage(state, 'error', t('err.nameSame'))
+    else pushMessage(state, 'error', t('err.nameDailyLimit'))
+    return { state, refreshUi: true }
+  }
+  pushMessage(state, 'success', t('ok.name', { name: res.name }))
+  return { state, refreshUi: true }
 }
 
 function tokenize(line: string): string[] {

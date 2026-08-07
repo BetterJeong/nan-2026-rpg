@@ -1,7 +1,7 @@
 import './style.css'
 import { ZONES, MONSTERS, SKILLS, hasDefeatedBoss, requiredBossForZone, getBossForZone } from './game/data/content'
 import { getItem } from './game/data/items'
-import { handleCommand, welcome, getHud } from './game/commands'
+import { handleCommand, welcome, getHud, applyRename, canRenameToday } from './game/commands'
 import { getSuggestChips } from './game/suggest'
 import {
   classifyCommand,
@@ -630,6 +630,7 @@ function renderSettings(): void {
               ['ko', t('ui.langKo')],
             ],
           ),
+          settingNicknameRow(),
           settingToggle(
             t('ui.showInspector'),
             t('ui.showInspectorDesc'),
@@ -769,6 +770,52 @@ function renderSettings(): void {
       else if (key === 'fastMode') applyPatch({ fastMode: next })
     })
   })
+
+  const nickInput = root.querySelector<HTMLInputElement>('#settings-nickname')
+  const nickBtn = root.querySelector<HTMLButtonElement>('#btn-nickname-apply')
+  const applyNick = () => {
+    if (!nickInput || nickInput.disabled) return
+    if (state.mode === 'combat' || state.townSocial?.pending) {
+      pushMessage(state, 'error', t('err.nameBusy'))
+      refresh()
+      return
+    }
+    const res = applyRename(state.player, nickInput.value)
+    if (!res.ok) {
+      if (res.error === 'invalid') pushMessage(state, 'error', t('err.nameInvalid'))
+      else if (res.error === 'same') pushMessage(state, 'error', t('err.nameSame'))
+      else pushMessage(state, 'error', t('err.nameDailyLimit'))
+      refresh()
+      return
+    }
+    pushMessage(state, 'success', t('ok.name', { name: res.name }))
+    refresh()
+  }
+  nickBtn?.addEventListener('click', applyNick)
+  nickInput?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      applyNick()
+    }
+  })
+}
+
+function settingNicknameRow(): string {
+  const locked = !canRenameToday(state.player)
+  const desc = locked ? t('ui.nicknameDescUsed') : t('ui.nicknameDesc')
+  return `
+    <div class="setting-row" data-keys="name rename nickname 닉네임 ${escapeAttr(t('ui.nickname').toLowerCase())}">
+      <div class="setting-meta">
+        <div class="setting-title">${escapeHtml(t('ui.nickname'))}</div>
+        <div class="setting-desc">${escapeHtml(desc)}</div>
+        <span class="setting-key">name / 닉네임</span>
+      </div>
+      <div class="setting-control setting-nickname">
+        <input type="text" id="settings-nickname" maxlength="12" autocomplete="off" spellcheck="false"
+          value="${escapeAttr(state.player.name)}" ${locked ? 'disabled' : ''} />
+        <button type="button" id="btn-nickname-apply" ${locked ? 'disabled' : ''}>${escapeHtml(t('ui.nicknameApply'))}</button>
+      </div>
+    </div>`
 }
 
 function applyPatch(partial: Parameters<typeof patchSettings>[0]): void {

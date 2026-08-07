@@ -125,6 +125,8 @@ export type PlayerState = {
   npcGiftStage: Record<string, number>
   /** Dialogue ids already used (prefer unseen) */
   npcDialogueSeen: Record<string, string[]>
+  /** Local YYYY-MM-DD of last nickname change (once per day) */
+  lastNameChangeDate?: string
 }
 
 export type TownSocialState = {

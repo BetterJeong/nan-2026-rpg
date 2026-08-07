@@ -156,6 +156,7 @@ const EN: Dict = {
   skills          known skills
   look / ls       current location
   zones           list hunting zones
+  name / rename   change nickname (once per local day)
 
 [items]
   equip <name>    equip gear
@@ -237,6 +238,11 @@ const EN: Dict = {
   'err.usage.hints': 'usage: hints on | off',
   'err.usage.explorer': 'usage: explorer compact | normal',
   'err.usage.lang': 'usage: lang en | lang ko',
+  'err.usage.name': 'usage: name <new>  (2-12 chars, no spaces, once per day)',
+  'err.nameInvalid': 'error: nickname must be 2-12 characters with no spaces',
+  'err.nameDailyLimit': 'error: nickname already changed today — try again tomorrow',
+  'err.nameSame': 'error: that is already your nickname',
+  'err.nameBusy': 'error: finish combat / reply first, then change nickname',
   'err.usage.fast': 'usage: fast on | off  (or: pace fast | pace normal)',
   'err.usage.settings':
     'usage: settings | settings close | settings list | settings reset | settings appearance|game|terminal',
@@ -275,6 +281,8 @@ const EN: Dict = {
   'ok.hints': 'combat hints {state}',
   'ok.explorer': 'explorer: {mode}',
   'ok.lang': 'language set to {lang}',
+  'ok.name': 'nickname set: {name}',
+  'info.name': 'nickname: {name}\nusage: name <new>  (once per day)',
   'ok.fast': 'fast mode {state}',
   'ok.lootItem': 'found item: {item}',
   'ok.lootGold': 'found gold pouch: +{gold}G (wallet {total}G)',
@@ -427,6 +435,10 @@ const EN: Dict = {
   'ui.colorThemeDesc': 'Dark / Light mode for the whole IDE UI',
   'ui.language': 'Language',
   'ui.languageDesc': 'UI & messages language (place names follow language)',
+  'ui.nickname': 'Nickname',
+  'ui.nicknameDesc': 'Change once per local day (2–12 chars, no spaces)',
+  'ui.nicknameDescUsed': 'Already changed today — available again tomorrow',
+  'ui.nicknameApply': 'Apply',
   'ui.showInspector': 'Show Inspector',
   'ui.showInspectorDesc': 'Right-side inspector panel',
   'ui.compactExplorer': 'Compact Explorer',
@@ -467,6 +479,7 @@ const KO: Dict = {
   skills          보유 스킬
   look / ls       현재 위치
   zones           사냥터 목록
+  name / 닉네임   닉네임 변경 (로컬 날짜 기준 하루 1회)
 
 [아이템]
   equip <name>    장비 장착
@@ -548,6 +561,11 @@ const KO: Dict = {
   'err.usage.hints': 'usage: hints on | off',
   'err.usage.explorer': 'usage: explorer compact | normal',
   'err.usage.lang': 'usage: lang en | lang ko',
+  'err.usage.name': 'usage: name <새이름>  (2~12자, 공백 불가, 하루 1회)',
+  'err.nameInvalid': 'error: 닉네임은 공백 없이 2~12자여야 합니다',
+  'err.nameDailyLimit': 'error: 오늘은 이미 닉네임을 변경했습니다 — 내일 다시 시도하세요',
+  'err.nameSame': 'error: 이미 같은 닉네임입니다',
+  'err.nameBusy': 'error: 전투·대화 답변을 끝낸 뒤 닉네임을 변경하세요',
   'err.usage.fast': 'usage: fast on | off  (또는: pace fast | pace normal)',
   'err.usage.settings':
     'usage: settings | settings close | settings list | settings reset | settings appearance|game|terminal',
@@ -586,6 +604,8 @@ const KO: Dict = {
   'ok.hints': '전투 힌트 {state}',
   'ok.explorer': 'explorer: {mode}',
   'ok.lang': '언어: {lang}',
+  'ok.name': '닉네임 변경: {name}',
+  'info.name': '닉네임: {name}\nusage: name <새이름>  (하루 1회)',
   'ok.fast': '빠른 모드 {state}',
   'ok.lootItem': '아이템 획득: {item}',
   'ok.lootGold': '골드 획득: +{gold}G (보유 {total}G)',
@@ -738,6 +758,10 @@ const KO: Dict = {
   'ui.colorThemeDesc': '전체 IDE 다크/라이트 모드',
   'ui.language': '언어',
   'ui.languageDesc': 'UI·메시지 언어 (장소·둘러보기·이름은 언어에 맞춤)',
+  'ui.nickname': '닉네임',
+  'ui.nicknameDesc': '로컬 날짜 기준 하루 1회 (2~12자, 공백 불가)',
+  'ui.nicknameDescUsed': '오늘은 이미 변경함 — 내일 다시 가능',
+  'ui.nicknameApply': '적용',
   'ui.showInspector': 'Inspector 표시',
   'ui.showInspectorDesc': '우측 정보 패널',
   'ui.compactExplorer': 'Explorer 좁게',
