@@ -62,7 +62,7 @@ available commands
   equip <name>    equip gear
   unequip <slot>  unequip slot
   use <name>      use consumable
-  buy <name>      buy from shop
+  buy <name|#>    buy from shop (name or catalog #)
   sell <name> [n] sell item (default qty 1)
   shop list       shop catalog
 
@@ -448,7 +448,7 @@ function handleBuy(state: GameState, arg: string): CommandResult {
     return { state, refreshUi: true }
   }
   if (!arg) {
-    pushMessage(state, 'error', 'usage: buy <item>')
+    pushMessage(state, 'error', 'usage: buy <item|#>  (see shop list)')
     return { state, refreshUi: true }
   }
 
@@ -518,10 +518,20 @@ function handleSell(state: GameState, rest: string[]): CommandResult {
 }
 
 function resolveShopItem(query: string) {
-  const q = query.trim().toLowerCase()
+  const raw = query.trim()
+  // catalog number: buy 1, buy #3
+  const numMatch = raw.match(/^#?(\d+)$/)
+  if (numMatch) {
+    const idx = parseInt(numMatch[1], 10) - 1
+    if (idx >= 0 && idx < SHOP_CATALOG.length) {
+      return ITEMS[SHOP_CATALOG[idx]]
+    }
+    return undefined
+  }
+  const q = raw.toLowerCase()
   for (const id of SHOP_CATALOG) {
     const item = ITEMS[id]
-    if (item.id === q || item.name.toLowerCase() === q || item.name === query.trim()) return item
+    if (item.id === q || item.name.toLowerCase() === q || item.name === raw) return item
   }
   return undefined
 }
@@ -614,7 +624,7 @@ function formatLook(state: GameState): string {
     return 'town — safe hub.\n  shop to trade, go forest1 to hunt.'
   }
   if (loc === 'shop') {
-    return 'shop — buy / sell / shop list.\n  town to leave.'
+    return 'shop — buy <name|#> / sell / shop list.\n  town to leave.'
   }
   const zone = ZONES[loc]
   if (zone) {
@@ -636,16 +646,18 @@ function formatShop(): string {
   const lines = [
     'shop catalog (sellback ~= 1/3 of list price)',
     'note: shop gear has worse value than drops',
+    'buy by number: buy 1   |   buy by name: buy hp-potion-s',
     '------------',
   ]
-  for (const id of SHOP_CATALOG) {
+  SHOP_CATALOG.forEach((id, i) => {
     const item = ITEMS[id]
+    const no = String(i + 1).padStart(2, ' ')
     lines.push(
-      `  [${itemKindLabel(item)}] ${item.name}  ${item.buyPrice}G  — ${formatItemStats(item)}`,
+      `  ${no}. [${itemKindLabel(item)}] ${item.name}  ${item.buyPrice}G  — ${formatItemStats(item)}`,
     )
-  }
+  })
   lines.push('------------')
-  lines.push('buy <name>  |  sell <name> [qty]')
+  lines.push(`buy <1-${SHOP_CATALOG.length}|name>  |  sell <name> [qty]`)
   return lines.join('\n')
 }
 

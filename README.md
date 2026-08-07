@@ -85,7 +85,7 @@ CLI에 `help`를 입력해도 동일한 목록을 볼 수 있습니다.
 | `equip <name>` | — | 인벤 장비를 해당 슬롯에 장착 (기존 장비는 인벤으로) | `equip wood-sword` |
 | `unequip <slot>` | — | 슬롯 장비 해제 → 인벤으로 | `unequip weapon` |
 | `use <name>` | — | 소모품 사용 (비전투·전투 모두 가능, 전투 시 턴 소비) | `use hp-potion-s` |
-| `buy <name>` | — | 상점에서 구매 (마을/상점, 골드 필요) | `buy hp-potion-m` |
+| `buy <name|#>` | — | 상점에서 구매. 이름 또는 목록 번호 (`buy 1`, `buy #3`) | `buy 1` / `buy hp-potion-m` |
 | `sell <name> [n]` | — | 아이템 판매. 수량 생략 시 1개. 판매가 ≈ 정가의 1/3 | `sell cloth-cap 2` |
 
 장비 슬롯: `helmet` `armor` `legs` `boots` `gloves` `weapon` `ring` `necklace`  
