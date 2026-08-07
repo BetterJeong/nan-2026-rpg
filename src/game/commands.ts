@@ -1253,13 +1253,26 @@ function parseOnOff(arg: string): boolean | null {
 
 export function welcome(state: GameState): void {
   pushMessage(state, 'success', t('welcome.title'))
-  pushMessage(state, 'output', t('welcome.hint'))
   if (!getSettings().languageChosen) {
     pushMessage(state, 'success', t('welcome.lang'))
   }
+
   if (hasSave()) {
-    pushMessage(state, 'system', t('welcome.save'))
+    const loaded = loadGame()
+    if (loaded) {
+      Object.assign(state, loaded)
+      pushMessage(state, 'success', t('ok.loaded'))
+      pushMessage(
+        state,
+        'system',
+        t('ok.welcomeBack', { name: state.player.name, loc: locLabel(state) }),
+      )
+      return
+    }
+    pushMessage(state, 'error', t('err.corruptSave'))
   }
+
+  pushMessage(state, 'output', t('welcome.hint'))
 }
 
 function locLabel(state: GameState): string {
