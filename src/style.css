@@ -79,27 +79,32 @@
 
 html,
 body {
+  width: 100%;
   height: 100%;
   overflow: hidden;
-  background: var(--bg-page);
+  background: var(--bg-editor);
   color: var(--fg);
   font-family: var(--font-ui);
-  /* iOS: prevent rubber-band scroll shifting the app behind keyboard */
   overscroll-behavior: none;
   touch-action: manipulation;
+  position: fixed;
+  inset: 0;
 }
 
 #app {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
   height: var(--app-height, 100dvh);
   max-height: var(--app-height, 100dvh);
-  width: 100%;
   display: flex;
   flex-direction: column;
-  position: fixed;
-  top: var(--app-top, 0px);
-  left: 0;
-  right: 0;
   overflow: hidden;
+  background: var(--bg-editor);
+  /* visualViewport pinning (set in JS) — keeps UI glued above keyboard */
+  transform: translate3d(var(--app-left, 0px), var(--app-top, 0px), 0);
+  will-change: transform, height;
 }
 
 body.hide-inspector .inspector {
@@ -123,19 +128,32 @@ body.compact-explorer .tree-hint {
   background: var(--bg-titlebar);
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 12px;
+  justify-content: space-between;
+  gap: 8px;
   border-bottom: 1px solid var(--border);
   user-select: none;
   flex-shrink: 0;
   position: relative;
+  padding: 0 8px;
+  z-index: 50;
+}
+
+.titlebar-left,
+.titlebar-right {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 72px;
+}
+
+.titlebar-right {
+  justify-content: flex-end;
 }
 
 .titlebar-dots {
-  position: absolute;
-  left: 12px;
   display: flex;
   gap: 6px;
+  padding-left: 4px;
 }
 
 .titlebar-dots span {
@@ -154,16 +172,54 @@ body.compact-explorer .tree-hint {
   background: #28c840;
 }
 
+.titlebar-btn {
+  display: none;
+  width: 32px;
+  height: 28px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--fg);
+  font-size: 16px;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.titlebar-btn:hover,
+.titlebar-btn.active {
+  background: var(--bg-hover);
+  border-color: var(--border);
+  color: var(--fg-bright);
+}
+
 .titlebar-title {
+  flex: 1;
+  text-align: center;
   font-size: 12px;
   color: var(--fg-dim);
   font-family: var(--font-mono);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  pointer-events: none;
 }
+
+.mobile-backdrop {
+  display: none;
+}
+
+.mobile-only {
+  display: none !important;
+}
+
 
 .workspace {
   flex: 1;
   display: flex;
   min-height: 0;
+  position: relative;
 }
 
 .activity {
@@ -294,6 +350,7 @@ body.compact-explorer .tree-hint {
   display: flex;
   flex-direction: column;
   min-width: 0;
+  min-height: 0;
   background: var(--bg-editor);
   position: relative;
 }
@@ -460,13 +517,18 @@ body.compact-explorer .tree-hint {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 16px calc(14px + env(safe-area-inset-bottom, 0px));
+  padding: 10px 16px 14px;
   border-top: 1px solid var(--border);
-  background: color-mix(in srgb, var(--bg-editor) 92%, #000);
+  background: var(--bg-editor);
   flex-shrink: 0;
-  /* stick above soft keyboard via visualViewport-driven #app height */
   position: relative;
   z-index: 5;
+}
+
+body.keyboard-open .cli-input-row {
+  padding: 8px 12px 8px;
+  border-top-color: var(--border);
+  box-shadow: 0 -8px 16px color-mix(in srgb, #000 25%, transparent);
 }
 
 .cli-prompt {
@@ -827,32 +889,140 @@ body.view-settings .cli-hud {
   .activity {
     display: none;
   }
-  .explorer {
-    display: none;
-  }
-  .inspector {
-    display: none;
-  }
+
   .titlebar-dots {
     display: none;
   }
 
-  /* Mobile: chat-like layout — more room for terminal + input above keyboard */
-  .titlebar {
-    height: 28px;
+  .mobile-only {
+    display: flex !important;
   }
+
+  .titlebar-btn {
+    display: inline-flex;
+  }
+
+  .titlebar {
+    height: 36px;
+    flex-shrink: 0;
+    z-index: 60;
+  }
+
+  :root {
+    --titlebar-h: 36px;
+  }
+
+  .mobile-backdrop {
+    position: absolute;
+    top: var(--titlebar-h);
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border: none;
+    padding: 0;
+    margin: 0;
+    background: rgba(0, 0, 0, 0.45);
+    z-index: 40;
+  }
+
+  .mobile-backdrop.show {
+    display: block;
+  }
+
+  .explorer,
+  .inspector {
+    display: flex !important;
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    z-index: 45;
+    width: min(82vw, 300px);
+    max-width: 300px;
+    box-shadow: 0 0 24px rgba(0, 0, 0, 0.35);
+    transition: transform 0.2s ease;
+    background: var(--bg-sidebar);
+  }
+
+  .explorer {
+    left: 0;
+    transform: translateX(-105%);
+    border-right: 1px solid var(--border);
+  }
+
+  .inspector {
+    right: 0;
+    left: auto;
+    transform: translateX(105%);
+    border-left: 1px solid var(--border);
+  }
+
+  body.drawer-explorer .explorer {
+    transform: translateX(0);
+    pointer-events: auto;
+  }
+
+  body.drawer-inspector .inspector {
+    transform: translateX(0);
+    pointer-events: auto;
+  }
+
+  body:not(.drawer-explorer) .explorer {
+    pointer-events: none;
+  }
+
+  body:not(.drawer-inspector) .inspector {
+    pointer-events: none;
+  }
+
   .statusbar {
     display: none;
   }
-  body.keyboard-open .tabbar {
-    display: none;
+
+  .workspace,
+  .editor,
+  .game-view {
+    min-height: 0;
   }
-  body.keyboard-open .cli-hud {
-    display: none;
+
+  .terminal {
+    font-size: 14px;
+    padding: 8px 12px;
   }
+
+  .cli-prompt {
+    font-size: 14px;
+  }
+
+  body.keyboard-open .tabbar,
+  body.keyboard-open .cli-hud,
+  body.keyboard-open .settings-cats,
+  body.keyboard-open .settings-toolbar {
+    display: none !important;
+  }
+
+  body.keyboard-open .titlebar {
+    height: 28px;
+  }
+
+  body.keyboard-open.drawer-explorer .explorer,
+  body.keyboard-open.drawer-inspector .inspector,
+  body.keyboard-open .mobile-backdrop.show {
+    display: none !important;
+  }
+
+  body.keyboard-open .terminal {
+    font-size: 13px;
+    padding: 6px 10px;
+  }
+
   .cli-input-row {
-    padding: 12px 12px calc(12px + env(safe-area-inset-bottom, 0px));
+    padding: 10px 12px calc(10px + env(safe-area-inset-bottom, 0px));
   }
+
+  body.keyboard-open .cli-input-row {
+    padding: 8px 12px;
+  }
+
   .settings-search {
     font-size: 16px;
   }

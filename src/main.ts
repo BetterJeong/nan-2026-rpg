@@ -35,6 +35,8 @@ let state: GameState = createInitialState()
 let historyIndex = -1
 let draft = ''
 let settingsQuery = ''
+let explorerOpen = false
+let inspectorOpen = false
 
 const app = document.querySelector<HTMLDivElement>('#app')!
 
@@ -47,9 +49,16 @@ function autoSave(): void {
 function renderShell(): void {
   app.innerHTML = `
     <div class="titlebar">
-      <div class="titlebar-dots"><span class="r"></span><span class="y"></span><span class="g"></span></div>
+      <div class="titlebar-left">
+        <div class="titlebar-dots"><span class="r"></span><span class="y"></span><span class="g"></span></div>
+        <button type="button" class="titlebar-btn mobile-only" id="btn-explorer" title="Explorer" aria-label="Explorer">☰</button>
+      </div>
       <div class="titlebar-title" id="titlebar-title">DevQuest — nan-2026-rpg — terminal.rpg</div>
+      <div class="titlebar-right mobile-only">
+        <button type="button" class="titlebar-btn" id="btn-inspector" title="Inspector" aria-label="Inspector">ℹ</button>
+      </div>
     </div>
+    <div class="mobile-backdrop" id="mobile-backdrop" hidden></div>
     <div class="workspace">
       <nav class="activity" aria-label="Activity Bar" id="activity">
         <button type="button" class="activity-btn active" data-view="game" title="Explorer">📁</button>
@@ -90,22 +99,28 @@ function renderShell(): void {
   const cli = document.querySelector<HTMLInputElement>('#cli')!
   cli.addEventListener('keydown', onKeyDown)
   cli.addEventListener('focus', () => {
+    closeMobileDrawers()
     document.body.classList.add('keyboard-open')
+    window.scrollTo(0, 0)
     syncVisualViewport()
-    // wait a frame for keyboard animation, then keep caret area visible
-    requestAnimationFrame(() => {
+    const bump = () => {
+      window.scrollTo(0, 0)
       syncVisualViewport()
       scrollTerminalToEnd()
-    })
-    setTimeout(() => {
-      syncVisualViewport()
-      scrollTerminalToEnd()
-    }, 300)
+    }
+    requestAnimationFrame(bump)
+    setTimeout(bump, 50)
+    setTimeout(bump, 250)
+    setTimeout(bump, 450)
   })
   cli.addEventListener('blur', () => {
     document.body.classList.remove('keyboard-open')
     syncVisualViewport()
   })
+
+  document.querySelector('#btn-explorer')?.addEventListener('click', () => toggleExplorerDrawer())
+  document.querySelector('#btn-inspector')?.addEventListener('click', () => toggleInspectorDrawer())
+  document.querySelector('#mobile-backdrop')?.addEventListener('click', () => closeMobileDrawers())
 
   document.querySelector('#explorer')!.addEventListener('click', (e) => {
     const t = (e.target as HTMLElement).closest('.tree-item') as HTMLElement | null
@@ -115,10 +130,14 @@ function renderShell(): void {
       e.preventDefault()
       e.stopPropagation()
       setSettingsCategory(settingsCat)
+      closeMobileDrawers()
       return
     }
     const cmd = t.getAttribute('data-cmd') || t.dataset.cmd
-    if (cmd) runCommand(cmd)
+    if (cmd) {
+      runCommand(cmd)
+      closeMobileDrawers()
+    }
   })
 
   document.querySelector('#activity')!.addEventListener('click', (e) => {
@@ -169,6 +188,37 @@ function runCommand(raw: string): void {
   refresh()
 }
 
+function syncMobileDrawers(): void {
+  document.body.classList.toggle('drawer-explorer', explorerOpen)
+  document.body.classList.toggle('drawer-inspector', inspectorOpen)
+  const backdrop = document.querySelector<HTMLElement>('#mobile-backdrop')
+  if (backdrop) {
+    const show = explorerOpen || inspectorOpen
+    backdrop.hidden = !show
+    backdrop.classList.toggle('show', show)
+  }
+  document.querySelector('#btn-explorer')?.classList.toggle('active', explorerOpen)
+  document.querySelector('#btn-inspector')?.classList.toggle('active', inspectorOpen)
+}
+
+function closeMobileDrawers(): void {
+  explorerOpen = false
+  inspectorOpen = false
+  syncMobileDrawers()
+}
+
+function toggleExplorerDrawer(): void {
+  explorerOpen = !explorerOpen
+  if (explorerOpen) inspectorOpen = false
+  syncMobileDrawers()
+}
+
+function toggleInspectorDrawer(): void {
+  inspectorOpen = !inspectorOpen
+  if (inspectorOpen) explorerOpen = false
+  syncMobileDrawers()
+}
+
 function refresh(): void {
   const view = getUiView()
   document.body.classList.toggle('view-settings', view === 'settings')
@@ -183,6 +233,7 @@ function refresh(): void {
     updatePrompt()
   }
   renderInspector()
+  syncMobileDrawers()
   const sb = document.querySelector('#sb-loc')
   if (sb) sb.textContent = getHud(state).location
   const themeEl = document.querySelector('#sb-theme')
@@ -712,32 +763,40 @@ function scrollTerminalToEnd(): void {
 
 function syncVisualViewport(): void {
   const vv = window.visualViewport
-  const height = vv?.height ?? window.innerHeight
-  const offsetTop = vv?.offsetTop ?? 0
-  document.documentElement.style.setProperty('--app-height', `${Math.round(height)}px`)
-  document.documentElement.style.setProperty('--app-top', `${Math.round(offsetTop)}px`)
+  const height = Math.round(vv?.height ?? window.innerHeight)
+  const offsetTop = Math.round(vv?.offsetTop ?? 0)
+  const offsetLeft = Math.round(vv?.offsetLeft ?? 0)
 
-  // Soft keyboard usually shrinks visualViewport vs layout viewport
-  const keyboardLikely = !!vv && vv.height < window.innerHeight * 0.85
+  // Pin #app exactly to the visual viewport (no black gap above keyboard)
+  document.documentElement.style.setProperty('--app-height', `${height}px`)
+  document.documentElement.style.setProperty('--app-top', `${offsetTop}px`)
+  document.documentElement.style.setProperty('--app-left', `${offsetLeft}px`)
+
+  const keyboardLikely = !!vv && vv.height < window.innerHeight * 0.8
   const inputFocused = document.activeElement?.id === 'cli'
   document.body.classList.toggle('keyboard-open', keyboardLikely || inputFocused)
+
+  // Kill iOS scroll offset that creates the black strip
+  if (keyboardLikely || inputFocused) {
+    window.scrollTo(0, 0)
+  }
 }
 
 function setupMobileLayout(): void {
   syncVisualViewport()
+  const onViewportChange = () => {
+    syncVisualViewport()
+    scrollTerminalToEnd()
+  }
   const vv = window.visualViewport
   if (vv) {
-    vv.addEventListener('resize', () => {
-      syncVisualViewport()
-      scrollTerminalToEnd()
-    })
-    vv.addEventListener('scroll', () => {
-      syncVisualViewport()
-    })
+    vv.addEventListener('resize', onViewportChange)
+    vv.addEventListener('scroll', onViewportChange)
   }
-  window.addEventListener('resize', syncVisualViewport)
+  window.addEventListener('resize', onViewportChange)
   window.addEventListener('orientationchange', () => {
-    setTimeout(syncVisualViewport, 200)
+    setTimeout(onViewportChange, 50)
+    setTimeout(onViewportChange, 250)
   })
 }
 
