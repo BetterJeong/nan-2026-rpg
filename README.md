@@ -17,6 +17,10 @@ VS Code 스타일 UI에서 CLI 명령으로 진행하는 웹 RPG입니다.
 | 가운데 CLI | 실제 플레이 화면 (명령 입력) |
 | 우측 Inspector | HP·장비·스킬·인벤·전투 대상 |
 | CLI 상단 HUD | Lv / HP / MP / EXP / GOLD |
+| 입력창 위 추천 칩 | 상황별 추천 명령 (탭하면 즉시 실행) |
+
+모바일에서는 상단 **☰ Explorer / ℹ Inspector** 로 좌·우 패널을 드로어로 엽니다.  
+추천 칩을 눌러 실행할 때는 키보드를 열지 않습니다 (직접 입력창을 터치하면 키보드 사용).
 
 ### 기본 진행 순서
 
@@ -116,11 +120,40 @@ CLI에 `help`를 입력해도 동일한 목록을 볼 수 있습니다.
 | `autosave <min>` | — | 자동저장 간격 변경 (**1~60분**) | `autosave 10` |
 | `theme <mode>` | — | 테마 변경 (`dark` / `light`) | `theme light` |
 | `lang <en\|ko>` | `language`, `locale` | UI·메시지 언어 변경 (**명령어는 영어 유지**) | `lang ko` |
+| `fast on\|off` | `pace`, `speed` | 메시지 출력 속도 (기본 off = 천천히) | `fast on` |
 | `fontsize <n>` | — | 터미널 글자 크기 (11–18) | `fontsize 14` |
+| `inspector on\|off` | — | 우측 Inspector 표시 | `inspector off` |
+| `hud on\|off` | — | 상단 HUD 표시 | `hud off` |
+| `explorer compact\|normal` | — | 왼쪽 Explorer 좁게/기본 | `explorer compact` |
+| `hints on\|off` | `combathints` | 전투 시작 시 명령 힌트 | `hints off` |
 | `settings` | `preferences`, `config` | 설정 UI 열기 (선택 사항) | `settings` |
 | `clear` | `cls` | CLI 화면 지우기 | `clear` |
 | `history` | — | 최근 입력 명령 기록 보기 (↑/↓ 키로도 재입력 가능) | `history` |
 | `reset` | — | 새 게임 시작. 저장 파일은 삭제되지 않음 (덮어쓰려면 `save`) | `reset` |
+
+### 추천 명령 칩
+
+입력창 **바로 위**에 현재 상황에 맞는 명령이 칩으로 뜹니다. 탭하면 바로 실행됩니다.
+
+| 상황 | 추천 예 |
+|------|---------|
+| 마을 | `shop`, `go forest1`, `status`, `inv`, `help`, `save` |
+| 사냥터 | `hunt`, `town`, `status`, `inv` … |
+| 상점 | `shop list`, `buy 1`, `town` … |
+| 전투 | `attack`, `skill slash`, `defend`, `use …`, `flee` |
+| `inv` 직후 | 가방 장비에 대해 `equip wood-sword` 등 |
+
+### 메시지 출력 속도 (페이싱)
+
+명령 결과를 **한 줄씩** 보여 주며, 종류에 따라 딜레이가 다릅니다 (전투·탐색이 더 김).  
+출력 중에는 입력·칩이 잠깐 잠깁니다.
+
+| 모드 | 설정 | 설명 |
+|------|------|------|
+| 기본 | `fast off` | 천천히 (기본값) |
+| Fast | `fast on` | 빠른 출력 |
+
+설정 UI: Game → Fast Mode
 
 ### 설정
 
