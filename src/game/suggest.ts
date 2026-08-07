@@ -140,7 +140,9 @@ export function getSuggestChips(state: GameState): SuggestChip[] {
 
   if (state.mode === 'combat' && state.combat) {
     const chips: SuggestChip[] = [{ cmd: 'attack', label: 'attack' }]
-    const skillId = state.player.skills[0]
+    // Prefer the most recently unlocked skill (skills are appended on unlock)
+    const skills = state.player.skills
+    const skillId = skills.length ? skills[skills.length - 1] : undefined
     if (skillId) {
       chips.push({ cmd: `skill ${skillId}`, label: `skill ${skillId}` })
     }
