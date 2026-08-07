@@ -69,14 +69,18 @@ function firstConsumableCmd(state: GameState): SuggestChip | null {
   return null
 }
 
-function firstUnlockedZone(state: GameState): string | null {
+/** Best hunting zone for current level: highest unlocked minLevel ≤ player level. */
+function bestZoneForLevel(state: GameState): string | null {
+  let best: { id: string; minLevel: number } | null = null
   for (const z of Object.values(ZONES)) {
     if (state.player.level < z.minLevel) continue
     const need = requiredBossForZone(z)
     if (need && !hasDefeatedBoss(state.player.bossesDefeated, need)) continue
-    return z.id
+    if (!best || z.minLevel > best.minLevel) {
+      best = { id: z.id, minLevel: z.minLevel }
+    }
   }
-  return null
+  return best?.id ?? null
 }
 
 function nextRegionEntry(state: GameState): string | null {
@@ -175,7 +179,7 @@ export function getSuggestChips(state: GameState): SuggestChip[] {
   const needsRest = state.player.hp < maxHp || state.player.mp < maxMp
 
   if (loc === 'town') {
-    const zone = firstUnlockedZone(state)
+    const zone = bestZoneForLevel(state)
     if (state.townSocial?.pending) {
       return prependLangPicker([
         { cmd: '1', label: '1' },
