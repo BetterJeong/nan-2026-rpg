@@ -134,7 +134,7 @@ export function handleCommand(state: GameState, raw: string): CommandResult {
         pushMessage(state, 'error', t('err.usage.lang'))
         break
       }
-      const res = patchSettings({ locale: lang })
+      const res = patchSettings({ locale: lang, languageChosen: true })
       if (!res.ok) {
         pushMessage(state, 'error', res.error)
         break
@@ -617,7 +617,7 @@ function handleCombatCommand(state: GameState, c: string, arg: string): CommandR
       pushMessage(state, 'error', t('err.usage.lang'))
       return { state, refreshUi: true }
     }
-    patchSettings({ locale: lang })
+    patchSettings({ locale: lang, languageChosen: true })
     pushMessage(state, 'success', t('ok.lang', { lang }))
     return { state, refreshUi: true }
   }

@@ -136,7 +136,7 @@ const EN: Dict = {
   'welcome.inTown': 'you are in town.',
   'welcome.help': '  >>>  type  help  to list commands  <<<',
   'welcome.hint': 'hint: status -> go forest1 -> hunt',
-  'welcome.lang': '언어 변경: lang ko  |  language: lang ko  (commands stay English)',
+  'welcome.lang': 'pick language below → tap 한국어 / English  (or: lang ko)',
   'welcome.save': 'save detected. type load to restore.',
 
   'err.unknownCmd': 'error: command not found: {cmd}  (try help)',
@@ -397,7 +397,7 @@ const KO: Dict = {
   'welcome.inTown': '마을에 도착했습니다.',
   'welcome.help': '  >>>  help  를 입력하면 명령어를 볼 수 있습니다  <<<',
   'welcome.hint': '추천: status -> go forest1 -> hunt',
-  'welcome.lang': '언어 변경: lang en  |  language: lang en  (명령어는 영어 유지)',
+  'welcome.lang': '언어 선택 → 아래 칩  한국어 / English  (또는 lang ko)',
   'welcome.save': '저장 데이터가 있습니다. load 로 불러오세요.',
 
   'err.unknownCmd': 'error: 알 수 없는 명령어: {cmd}  (help 입력)',

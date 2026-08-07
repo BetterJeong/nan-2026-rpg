@@ -15,6 +15,8 @@ export type SettingsCategory = 'appearance' | 'game' | 'terminal'
 export type AppSettings = {
   theme: ThemeId
   locale: Lang
+  /** False until user picks lang once (shows 한국어/English chips). */
+  languageChosen: boolean
   autosaveMinutes: number
   fontSize: number
   showInspector: boolean
@@ -25,9 +27,22 @@ export type AppSettings = {
   fastMode: boolean
 }
 
+function detectBrowserLocale(): Lang {
+  try {
+    const langs = [navigator.language, ...(navigator.languages ?? [])]
+    for (const l of langs) {
+      if (l?.toLowerCase().startsWith('ko')) return 'ko'
+    }
+  } catch {
+    /* ignore */
+  }
+  return 'en'
+}
+
 export const DEFAULT_SETTINGS: AppSettings = {
   theme: 'dark',
-  locale: 'en',
+  locale: detectBrowserLocale(),
+  languageChosen: false,
   autosaveMinutes: DEFAULT_AUTOSAVE_MIN,
   fontSize: 13,
   showInspector: true,
@@ -64,7 +79,14 @@ function loadSettings(): AppSettings {
     const raw = localStorage.getItem(SETTINGS_KEY)
     if (raw) {
       const parsed = JSON.parse(raw) as Partial<AppSettings>
-      return normalizeSettings({ ...DEFAULT_SETTINGS, ...parsed })
+      // Existing installs: skip first-run language chips
+      const languageChosen =
+        parsed.languageChosen != null ? !!parsed.languageChosen : true
+      return normalizeSettings({
+        ...DEFAULT_SETTINGS,
+        ...parsed,
+        languageChosen,
+      })
     }
   } catch {
     /* ignore */
@@ -74,10 +96,19 @@ function loadSettings(): AppSettings {
   if (legacy) {
     const n = parseInt(legacy, 10)
     if (Number.isInteger(n) && n >= MIN_AUTOSAVE_MIN && n <= MAX_AUTOSAVE_MIN) {
-      return normalizeSettings({ ...DEFAULT_SETTINGS, autosaveMinutes: n })
+      return normalizeSettings({
+        ...DEFAULT_SETTINGS,
+        autosaveMinutes: n,
+        languageChosen: true,
+      })
     }
   }
-  return { ...DEFAULT_SETTINGS }
+  // Fresh install: browser language + language picker chips
+  return {
+    ...DEFAULT_SETTINGS,
+    locale: detectBrowserLocale(),
+    languageChosen: false,
+  }
 }
 
 function normalizeSettings(s: AppSettings): AppSettings {
@@ -96,6 +127,7 @@ function normalizeSettings(s: AppSettings): AppSettings {
   return {
     theme,
     locale,
+    languageChosen: !!s.languageChosen,
     autosaveMinutes,
     fontSize,
     showInspector: s.showInspector !== false,
@@ -204,6 +236,7 @@ export function formatSettingsStatus(): string {
     '--------',
     `theme:            ${s.theme}`,
     `lang:             ${s.locale}`,
+    `languageChosen:   ${s.languageChosen}`,
     `autosave:         ${s.autosaveMinutes} min`,
     `fontSize:         ${s.fontSize}px`,
     `showInspector:    ${s.showInspector}`,

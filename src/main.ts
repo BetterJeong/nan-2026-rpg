@@ -656,7 +656,7 @@ function renderSettings(): void {
       if (el.dataset.key === 'theme') {
         applyPatch({ theme: el.value === 'light' ? 'light' : 'dark' })
       } else if (el.dataset.key === 'locale') {
-        applyPatch({ locale: el.value === 'ko' ? 'ko' : 'en' })
+        applyPatch({ locale: el.value === 'ko' ? 'ko' : 'en', languageChosen: true })
       }
     })
   })

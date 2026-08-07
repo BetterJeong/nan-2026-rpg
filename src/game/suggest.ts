@@ -1,7 +1,8 @@
 import { ZONES } from './data/content'
 import { getItem } from './data/items'
 import type { GameState } from './types'
-import { getUiView } from './settings'
+import { getEffectiveMaxHp, getEffectiveMaxMp } from './player'
+import { getSettings, getUiView } from './settings'
 
 export type SuggestChip = {
   /** exact CLI command to run */
@@ -11,6 +12,21 @@ export type SuggestChip = {
 }
 
 const MAX_CHIPS = 6
+
+function langPickerChips(): SuggestChip[] {
+  return [
+    { cmd: 'lang ko', label: '한국어' },
+    { cmd: 'lang en', label: 'English' },
+  ]
+}
+
+function prependLangPicker(chips: SuggestChip[]): SuggestChip[] {
+  if (getSettings().languageChosen) return chips
+  const out: SuggestChip[] = []
+  pushUnique(out, langPickerChips())
+  pushUnique(out, chips)
+  return out.slice(0, MAX_CHIPS)
+}
 
 function lastRawCmd(state: GameState): string {
   return state.history[state.history.length - 1]?.trim().toLowerCase() ?? ''
@@ -74,8 +90,8 @@ export function getSuggestChips(state: GameState): SuggestChip[] {
   if (getUiView() === 'settings') {
     return [
       { cmd: 'settings close', label: 'settings close' },
-      { cmd: 'lang ko', label: 'lang ko' },
-      { cmd: 'lang en', label: 'lang en' },
+      { cmd: 'lang ko', label: '한국어' },
+      { cmd: 'lang en', label: 'English' },
       { cmd: 'theme dark', label: 'theme dark' },
       { cmd: 'theme light', label: 'theme light' },
     ].slice(0, MAX_CHIPS)
@@ -105,19 +121,21 @@ export function getSuggestChips(state: GameState): SuggestChip[] {
       { cmd: 'inv', label: 'inv' },
       { cmd: 'help', label: 'help' },
     ])
-    return chips.slice(0, MAX_CHIPS)
+    return prependLangPicker(chips)
   }
 
   const loc = state.player.location
   const chips: SuggestChip[] = []
   const gear = equipChips(state, 2)
+  const maxHp = getEffectiveMaxHp(state.player)
+  const maxMp = getEffectiveMaxMp(state.player)
+  const needsRest = state.player.hp < maxHp || state.player.mp < maxMp
 
   if (loc === 'town') {
-    chips.push({ cmd: 'rest', label: 'rest' })
-    chips.push({ cmd: 'shop', label: 'shop' })
     const zone = firstUnlockedZone(state)
     if (zone) chips.push({ cmd: `go ${zone}`, label: `go ${zone}` })
-    // surface equip if bag has gear
+    chips.push({ cmd: 'shop', label: 'shop' })
+    if (needsRest) chips.push({ cmd: 'rest', label: 'rest' })
     pushUnique(chips, gear)
     pushUnique(chips, [
       { cmd: 'status', label: 'status' },
@@ -125,6 +143,7 @@ export function getSuggestChips(state: GameState): SuggestChip[] {
       { cmd: 'help', label: 'help' },
       { cmd: 'save', label: 'save' },
     ])
+    if (!needsRest) pushUnique(chips, [{ cmd: 'rest', label: 'rest' }])
   } else if (loc === 'shop') {
     chips.push(
       { cmd: 'shop list', label: 'shop list' },
@@ -155,5 +174,5 @@ export function getSuggestChips(state: GameState): SuggestChip[] {
     ])
   }
 
-  return chips.slice(0, MAX_CHIPS)
+  return prependLangPicker(chips)
 }
