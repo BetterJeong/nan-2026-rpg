@@ -110,11 +110,14 @@ function renderShell(): void {
   document.querySelector('#explorer')!.addEventListener('click', (e) => {
     const t = (e.target as HTMLElement).closest('.tree-item') as HTMLElement | null
     if (!t || t.classList.contains('locked')) return
-    if (t.dataset.settingsCat) {
-      setSettingsCategory(t.dataset.settingsCat as SettingsCategory)
+    const settingsCat = t.getAttribute('data-settings-cat')
+    if (settingsCat === 'appearance' || settingsCat === 'game' || settingsCat === 'terminal') {
+      e.preventDefault()
+      e.stopPropagation()
+      setSettingsCategory(settingsCat)
       return
     }
-    const cmd = t.dataset.cmd
+    const cmd = t.getAttribute('data-cmd') || t.dataset.cmd
     if (cmd) runCommand(cmd)
   })
 
@@ -325,11 +328,17 @@ function renderSettings(): void {
   const cat = getSettingsCategory()
   const q = settingsQuery.trim().toLowerCase()
   const root = document.querySelector('#settings-view')!
+  const showAll = q.length > 0
   root.innerHTML = `
     <div class="settings-toolbar">
       <input class="settings-search" id="settings-search" type="search"
         placeholder="Search settings" value="${escapeAttr(settingsQuery)}" />
       <button type="button" class="tab" id="settings-close-btn" style="height:28px;border-top:none">Close</button>
+    </div>
+    <div class="settings-cats" id="settings-cats">
+      <button type="button" class="settings-cat ${cat === 'appearance' ? 'active' : ''}" data-settings-cat="appearance">Appearance</button>
+      <button type="button" class="settings-cat ${cat === 'game' ? 'active' : ''}" data-settings-cat="game">Game</button>
+      <button type="button" class="settings-cat ${cat === 'terminal' ? 'active' : ''}" data-settings-cat="terminal">Terminal</button>
     </div>
     <div class="settings-body" id="settings-body">
       ${renderSettingsSection(
@@ -337,7 +346,7 @@ function renderSettings(): void {
         'Appearance',
         'Color theme and layout chrome',
         cat,
-        q,
+        showAll,
         [
           settingSelect(
             'Color Theme',
@@ -371,7 +380,7 @@ function renderSettings(): void {
         'Game',
         'Gameplay environment options',
         cat,
-        q,
+        showAll,
         [
           settingNumber(
             'Autosave Interval',
@@ -403,7 +412,7 @@ function renderSettings(): void {
         'Terminal',
         'CLI appearance',
         cat,
-        q,
+        showAll,
         [
           settingNumber(
             'Font Size',
@@ -426,7 +435,18 @@ function renderSettings(): void {
   const search = document.querySelector<HTMLInputElement>('#settings-search')!
   search.addEventListener('input', () => {
     settingsQuery = search.value
-    filterSettingsRows(settingsQuery)
+    // re-render so category filtering updates when clearing search
+    refresh()
+    document.querySelector<HTMLInputElement>('#settings-search')?.focus()
+  })
+
+  root.querySelector('#settings-cats')?.addEventListener('click', (e) => {
+    const btn = (e.target as HTMLElement).closest('[data-settings-cat]') as HTMLElement | null
+    const settingsCat = btn?.getAttribute('data-settings-cat')
+    if (settingsCat === 'appearance' || settingsCat === 'game' || settingsCat === 'terminal') {
+      settingsQuery = ''
+      setSettingsCategory(settingsCat)
+    }
   })
 
   root.querySelector('#settings-close-btn')?.addEventListener('click', () => closeSettings())
@@ -476,33 +496,27 @@ function applyPatch(partial: Parameters<typeof patchSettings>[0]): void {
   refresh()
 }
 
-function filterSettingsRows(query: string): void {
-  const q = query.trim().toLowerCase()
-  document.querySelectorAll<HTMLElement>('.setting-row').forEach((row) => {
-    if (!q) {
-      row.classList.remove('hidden')
-      return
-    }
-    const text = row.textContent?.toLowerCase() ?? ''
-    row.classList.toggle('hidden', !text.includes(q))
-  })
-}
-
 function renderSettingsSection(
   id: SettingsCategory,
   title: string,
   desc: string,
   active: SettingsCategory,
-  query: string,
+  showAll: boolean,
   rows: string[],
 ): string {
-  // When searching, show all matching sections; otherwise focus active category first but still list all like VS Code
-  const emphasize = !query && active === id
+  const visible = showAll || active === id
+  if (!visible) return ''
+
+  const filteredRows = showAll
+    ? rows.filter((row) => row.toLowerCase().includes(settingsQuery.trim().toLowerCase()))
+    : rows
+  if (showAll && filteredRows.length === 0) return ''
+
   return `
-    <section class="settings-section" data-section="${id}" style="${emphasize ? '' : ''}">
+    <section class="settings-section" data-section="${id}" id="settings-section-${id}">
       <h2>${title}</h2>
       <p class="section-desc">${desc}</p>
-      ${rows.join('')}
+      ${filteredRows.join('')}
     </section>
   `
 }

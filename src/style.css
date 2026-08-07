@@ -525,6 +525,37 @@ body.view-settings .cli-hud {
   flex-shrink: 0;
 }
 
+.settings-cats {
+  display: flex;
+  gap: 6px;
+  padding: 10px 20px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  overflow-x: auto;
+}
+
+.settings-cat {
+  height: 28px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  background: var(--bg-input);
+  color: var(--fg);
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.settings-cat:hover {
+  border-color: var(--accent);
+}
+
+.settings-cat.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
 .settings-search {
   flex: 1;
   max-width: 420px;
