@@ -93,6 +93,9 @@ export function classifyCommand(raw: string): PaceKind {
     cmd === 'cd' ||
     cmd === 'town' ||
     cmd === 'home' ||
+    cmd === 'rest' ||
+    cmd === 'sleep' ||
+    cmd === 'recover' ||
     cmd === 'shop' ||
     cmd === 'buy' ||
     cmd === 'sell' ||

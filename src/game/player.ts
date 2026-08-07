@@ -74,6 +74,36 @@ export function clampVitals(player: PlayerState): void {
   player.mp = Math.max(0, player.mp)
 }
 
+/** Full HP/MP restore (town rest). */
+export function fullRest(player: PlayerState): void {
+  player.hp = getEffectiveMaxHp(player)
+  player.mp = getEffectiveMaxMp(player)
+}
+
+/** Heal a fraction of max HP/MP (e.g. 0.1 = 10%). Returns actual deltas. */
+export function regenFraction(
+  player: PlayerState,
+  fraction: number,
+): { hp: number; mp: number } {
+  const maxHp = getEffectiveMaxHp(player)
+  const maxMp = getEffectiveMaxMp(player)
+  const gainHp = Math.max(1, Math.floor(maxHp * fraction))
+  const gainMp = Math.max(1, Math.floor(maxMp * fraction))
+  const beforeHp = player.hp
+  const beforeMp = player.mp
+  player.hp = Math.min(maxHp, player.hp + gainHp)
+  player.mp = Math.min(maxMp, player.mp + gainMp)
+  return { hp: player.hp - beforeHp, mp: player.mp - beforeMp }
+}
+
+/** Set HP/MP to a fraction of max (defeat respawn). HP at least 1. */
+export function setVitalsFraction(player: PlayerState, fraction: number): void {
+  const maxHp = getEffectiveMaxHp(player)
+  const maxMp = getEffectiveMaxMp(player)
+  player.hp = Math.max(1, Math.floor(maxHp * fraction))
+  player.mp = Math.max(0, Math.floor(maxMp * fraction))
+}
+
 export function inventoryQty(player: PlayerState, itemId: string): number {
   return player.inventory.find((e) => e.itemId === itemId)?.qty ?? 0
 }

@@ -13,9 +13,12 @@ import {
   addItem,
   applyLevelUps,
   getEffectiveMaxHp,
+  getEffectiveMaxMp,
   getTotalAtk,
   getTotalDef,
   isErrorMsg,
+  regenFraction,
+  setVitalsFraction,
   useConsumable,
 } from './player'
 
@@ -185,10 +188,17 @@ function enemyTurn(
     messages.push(t('combat.dead'))
     const loss = Math.floor(player.gold * 0.2)
     player.gold -= loss
-    player.hp = Math.max(1, Math.floor(getEffectiveMaxHp(player) * 0.5))
-    player.mp = Math.floor(player.mp * 0.5)
+    setVitalsFraction(player, 0.5)
     player.location = 'town'
     messages.push(t('combat.deadGold', { loss, gold: player.gold }))
+    messages.push(
+      t('combat.deadVitals', {
+        hp: player.hp,
+        maxHp: getEffectiveMaxHp(player),
+        mp: player.mp,
+        maxMp: getEffectiveMaxMp(player),
+      }),
+    )
     return { messages, ended: true, victory: false }
   }
 
@@ -216,6 +226,21 @@ function finishVictory(
 
   const levelLogs = applyLevelUps(player)
   messages.push(...levelLogs)
+
+  // level-up already full-heals; only regen if still not full
+  const regen = regenFraction(player, 0.1)
+  if (regen.hp > 0 || regen.mp > 0) {
+    messages.push(
+      t('combat.regen', {
+        hp: regen.hp,
+        mp: regen.mp,
+        curHp: player.hp,
+        maxHp: getEffectiveMaxHp(player),
+        curMp: player.mp,
+        maxMp: getEffectiveMaxMp(player),
+      }),
+    )
+  }
 
   return { messages, ended: true, victory: true }
 }

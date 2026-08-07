@@ -53,7 +53,16 @@ VS Code 스타일 UI에서 CLI 명령으로 진행하는 웹 RPG입니다.
 | `use <potion>` | 소모품 사용 (턴 소비) |
 | `flee` | 도망 (레벨 차에 따라 성공률 변동) |
 
-패배 시 마을로 리스폰되며 **골드 20% 손실**, HP/MP 일부만 회복됩니다.
+패배 시 마을로 리스폰되며 **골드 20% 손실**, HP/MP는 **최대치의 50%**로 부활합니다.
+
+### 회복
+
+| 방법 | 효과 |
+|------|------|
+| `rest` (마을에서만) | HP/MP **풀 회복** |
+| 전투 승리 | 최대치의 **약 10%** 소량 회복 (이미 풀이면 생략) |
+| 레벨업 | HP/MP **풀 회복** (+ max 증가) |
+| 포션 | `use mp-potion-s` 등 |
 
 ### 전체 명령어
 
@@ -67,6 +76,7 @@ CLI에 `help`를 입력해도 동일한 목록을 볼 수 있습니다.
 | `go <zone>` | `goto`, `move` | 사냥터로 이동. 레벨 조건 미달이면 입장 불가. 존 이름만 입력해도 이동됨 | `go forest1` / `숲1` |
 | `hunt` | `explore`, `search` | 현재 사냥터 탐색 (몬스터 80% / 아이템 10% / 골드 10%) | `hunt` |
 | `town` | `home` | 마을로 이동 | `town` |
+| `rest` | `sleep`, `recover` | 마을에서 HP/MP 풀 회복 | `rest` |
 | `cd ~` | `cd /`, `cd town` | 마을로 이동 (리눅스식) | `cd ~` |
 | `cd <zone>` | — | `go`와 동일하게 사냥터 이동 | `cd forest2` |
 | `shop` | — | 상점 입장 (마을/상점에서만) | `shop` |
@@ -137,7 +147,7 @@ CLI에 `help`를 입력해도 동일한 목록을 볼 수 있습니다.
 
 | 상황 | 추천 예 |
 |------|---------|
-| 마을 | `shop`, `go forest1`, `status`, `inv`, `help`, `save` |
+| 마을 | `rest`, `shop`, `go forest1`, `status`, `inv` … |
 | 사냥터 | `hunt`, `town`, `status`, `inv` … |
 | 상점 | `shop list`, `buy 1`, `town` … |
 | 전투 | `attack`, `skill slash`, `defend`, `use …`, `flee` |

@@ -113,6 +113,7 @@ export function getSuggestChips(state: GameState): SuggestChip[] {
   const gear = equipChips(state, 2)
 
   if (loc === 'town') {
+    chips.push({ cmd: 'rest', label: 'rest' })
     chips.push({ cmd: 'shop', label: 'shop' })
     const zone = firstUnlockedZone(state)
     if (zone) chips.push({ cmd: `go ${zone}`, label: `go ${zone}` })

@@ -89,6 +89,7 @@ const EN: Dict = {
   hunt / explore  search current zone
   town / cd ~     return to town
   shop            enter shop
+  rest            full HP/MP recover (town only)
 
 [status]
   status / st     stats + equipment
@@ -144,6 +145,7 @@ const EN: Dict = {
   'err.zoneLevel': 'error: {zone} requires Lv.{need}+ (you are Lv.{level})',
   'err.huntOnlyZone': 'error: hunt only works in a zone (go forest1)',
   'err.shopOnly': 'error: shop only available in town (town)',
+  'err.restTown': 'error: rest only in town (town)',
   'err.buyOnly': 'error: buy only in shop/town (shop)',
   'err.sellOnly': 'error: sell only in shop/town (shop)',
   'err.notSold': 'error: not sold here (shop list)',
@@ -182,8 +184,10 @@ const EN: Dict = {
   'ok.loaded': 'save loaded.',
   'ok.welcomeBack': 'welcome, {name}. pwd: {loc}',
   'ok.newGame': 'new game started. (save file kept — overwrite with save)',
-  'ok.town': 'moved to town. try: shop | go forest1',
+  'ok.town': 'moved to town. try: shop | rest | go forest1',
   'ok.townShort': 'moved to town.',
+  'ok.rest': 'rested. HP {hp}/{maxHp} | MP {mp}/{maxMp}',
+  'ok.restAlready': 'already at full HP/MP.',
   'ok.shopEnter': 'entered shop.',
   'ok.arrived': 'arrived: {zone} — {desc}',
   'ok.huntHint': 'hint: type hunt (or explore) to search',
@@ -222,9 +226,11 @@ const EN: Dict = {
   'combat.yourHp': 'your HP {hp}/{max}',
   'combat.dead': 'you were defeated... respawning in town (lost 20% gold)',
   'combat.deadGold': 'gold -{loss}G -> {gold}G | cd ~/town',
+  'combat.deadVitals': 'respawn vitals: HP {hp}/{maxHp} | MP {mp}/{maxMp}',
   'combat.win': '{name} defeated',
   'combat.reward': '+{exp} EXP | +{gold}G',
   'combat.drop': 'loot: {item}',
+  'combat.regen': 'recover +{hp} HP / +{mp} MP → HP {curHp}/{maxHp} | MP {curMp}/{maxMp}',
   'combat.errSkill': 'error: unknown skill',
   'combat.errLocked': 'error: skill not unlocked',
   'combat.errMp': 'error: not enough MP (need {need}, have {have})',
@@ -267,7 +273,7 @@ const EN: Dict = {
   'skills.line': '  {name} (MP {mp}) — {desc}',
   'skills.locked': '-- locked --',
   'skills.lockedLine': '  {name} (Lv.{level}+)',
-  'look.town': 'town — safe hub.\n  shop to trade, go forest1 to hunt.',
+  'look.town': 'town — safe hub.\n  shop to trade, rest to recover, go forest1 to hunt.',
   'look.shop': 'shop — buy <name|#> / sell / shop list.\n  town to leave.',
   'look.zone': '{zone} — {desc}\n  hunt to search | town to return',
   'look.pwd': 'pwd: {loc}',
@@ -344,6 +350,7 @@ const KO: Dict = {
   hunt / explore  현재 사냥터 탐색
   town / cd ~     마을로 이동
   shop            상점 입장
+  rest            HP/MP 풀 회복 (마을에서만)
 
 [상태]
   status / st     능력치·장비 확인
@@ -399,6 +406,7 @@ const KO: Dict = {
   'err.zoneLevel': 'error: {zone} 입장 조건 Lv.{need}+ (현재 Lv.{level})',
   'err.huntOnlyZone': 'error: 사냥터에서만 탐색 가능 (go forest1)',
   'err.shopOnly': 'error: 상점/마을에서만 이용 가능 (town)',
+  'err.restTown': 'error: 마을에서만 휴식 가능 (town)',
   'err.buyOnly': 'error: 상점/마을에서만 구매 가능 (shop)',
   'err.sellOnly': 'error: 상점/마을에서만 판매 가능 (shop)',
   'err.notSold': 'error: 상점에서 판매하지 않는 아이템 (shop list)',
@@ -437,8 +445,10 @@ const KO: Dict = {
   'ok.loaded': '저장 데이터를 불러왔습니다.',
   'ok.welcomeBack': '환영합니다, {name}. 위치: {loc}',
   'ok.newGame': '새 게임을 시작합니다. (세이브 파일 유지 — 덮어쓰려면 save)',
-  'ok.town': '마을로 이동. shop | go forest1',
+  'ok.town': '마을로 이동. shop | rest | go forest1',
   'ok.townShort': '마을로 이동했습니다.',
+  'ok.rest': '휴식 완료. HP {hp}/{maxHp} | MP {mp}/{maxMp}',
+  'ok.restAlready': '이미 HP/MP가 가득입니다.',
   'ok.shopEnter': '상점에 입장했습니다.',
   'ok.arrived': '도착: {zone} — {desc}',
   'ok.huntHint': '탐색하려면 hunt (또는 explore)',
@@ -477,9 +487,11 @@ const KO: Dict = {
   'combat.yourHp': '내 HP {hp}/{max}',
   'combat.dead': '쓰러졌습니다... 마을에서 부활 (골드 20% 손실)',
   'combat.deadGold': '골드 -{loss}G -> {gold}G | 마을로 이동',
+  'combat.deadVitals': '부활 상태: HP {hp}/{maxHp} | MP {mp}/{maxMp}',
   'combat.win': '{name} 처치',
   'combat.reward': '+{exp} EXP | +{gold}G',
   'combat.drop': '드롭: {item}',
+  'combat.regen': '전투 후 회복 +{hp} HP / +{mp} MP → HP {curHp}/{maxHp} | MP {curMp}/{maxMp}',
   'combat.errSkill': 'error: 알 수 없는 스킬',
   'combat.errLocked': 'error: 아직 해금되지 않은 스킬',
   'combat.errMp': 'error: 마나 부족 (필요 {need}, 보유 {have})',
@@ -522,7 +534,7 @@ const KO: Dict = {
   'skills.line': '  {name} (MP {mp}) — {desc}',
   'skills.locked': '-- 미해금 --',
   'skills.lockedLine': '  {name} (Lv.{level}+)',
-  'look.town': '마을 — 안전한 거점.\n  shop 으로 거래, go forest1 로 사냥.',
+  'look.town': '마을 — 안전한 거점.\n  shop 거래, rest 회복, go forest1 사냥.',
   'look.shop': '상점 — buy <name|#> / sell / shop list.\n  town 으로 나가기.',
   'look.zone': '{zone} — {desc}\n  hunt 로 탐색 | town 으로 귀환',
   'look.pwd': '위치: {loc}',

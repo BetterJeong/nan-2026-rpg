@@ -15,6 +15,7 @@ import {
   clampVitals,
   equipItem,
   findInventoryItem,
+  fullRest,
   getEffectiveMaxHp,
   getEffectiveMaxMp,
   getTotalAtk,
@@ -435,6 +436,35 @@ export function handleCommand(state: GameState, raw: string): CommandResult {
       state.player.location = 'town'
       pushMessage(state, 'success', t('ok.town'))
       break
+
+    case 'rest':
+    case 'sleep':
+    case 'recover': {
+      if (state.player.location !== 'town') {
+        pushMessage(state, 'error', t('err.restTown'))
+        break
+      }
+      const beforeHp = state.player.hp
+      const beforeMp = state.player.mp
+      fullRest(state.player)
+      const maxHp = getEffectiveMaxHp(state.player)
+      const maxMp = getEffectiveMaxMp(state.player)
+      if (beforeHp >= maxHp && beforeMp >= maxMp) {
+        pushMessage(state, 'system', t('ok.restAlready'))
+      } else {
+        pushMessage(
+          state,
+          'success',
+          t('ok.rest', {
+            hp: state.player.hp,
+            maxHp,
+            mp: state.player.mp,
+            maxMp,
+          }),
+        )
+      }
+      break
+    }
 
     case 'cd':
       if (arg === '~' || arg === '/' || arg === 'town' || arg === '마을') {
