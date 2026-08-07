@@ -16,7 +16,7 @@ VS Code 스타일 UI에서 CLI 명령으로 진행하는 웹 RPG입니다.
 | 왼쪽 Explorer | 마을 / 상점 / 사냥터 / 퀵 커맨드 |
 | 가운데 CLI | 실제 플레이 화면 (명령 입력) |
 | 우측 Inspector | HP·장비·스킬·인벤·전투 대상 |
-| CLI 상단 HUD | Lv / HP / MP / EXP / GOLD |
+| CLI 상단 HUD | Lv / EXP / GOLD / 현재 위치(+전투중) · 좁으면 다음 줄에 HP / MP |
 | 입력창 위 추천 칩 | 상황별 추천 명령 (탭하면 즉시 실행) |
 
 모바일에서는 상단 **☰ Explorer / ℹ Inspector** 로 좌·우 패널을 드로어로 엽니다.  

@@ -857,16 +857,11 @@ function parseOnOff(arg: string): boolean | null {
 }
 
 export function welcome(state: GameState): void {
-  pushMessage(state, 'system', t('welcome.banner1'))
-  pushMessage(state, 'system', t('welcome.title'))
-  pushMessage(state, 'system', t('welcome.zones'))
-  pushMessage(state, 'system', t('welcome.banner1'))
-  pushMessage(state, 'output', t('welcome.inTown'))
-  pushMessage(state, 'success', t('welcome.banner1'))
-  pushMessage(state, 'success', t('welcome.help'))
-  pushMessage(state, 'success', t('welcome.banner1'))
+  pushMessage(state, 'success', t('welcome.title'))
   pushMessage(state, 'output', t('welcome.hint'))
-  pushMessage(state, 'success', t('welcome.lang'))
+  if (!getSettings().languageChosen) {
+    pushMessage(state, 'success', t('welcome.lang'))
+  }
   if (hasSave()) {
     pushMessage(state, 'system', t('welcome.save'))
   }

@@ -130,14 +130,10 @@ const EN: Dict = {
   history         command history
   reset           new game (keeps save file)`,
 
-  'welcome.banner1': '======================================',
-  'welcome.title': '  DevQuest IDE — Terminal RPG v0.1',
-  'welcome.zones': '  early game zones: forest1..forest3',
-  'welcome.inTown': 'you are in town.',
-  'welcome.help': '  >>>  type  help  to list commands  <<<',
-  'welcome.hint': 'hint: status -> go forest1 -> hunt',
-  'welcome.lang': 'pick language below → tap 한국어 / English  (or: lang ko)',
-  'welcome.save': 'save detected. type load to restore.',
+  'welcome.title': 'DevQuest — Terminal RPG',
+  'welcome.hint': 'start: go forest1 → hunt  (or tap chips below)',
+  'welcome.lang': 'language: tap 한국어 / English below',
+  'welcome.save': 'save found — type load to continue.',
 
   'err.unknownCmd': 'error: command not found: {cmd}  (try help)',
   'err.notInCombat': 'error: not in combat. use hunt in a zone',
@@ -309,6 +305,7 @@ const EN: Dict = {
   'ui.inventory': 'Inventory',
   'ui.empty': '(empty)',
   'ui.combatTarget': 'Combat Target',
+  'ui.hudCombat': 'IN COMBAT',
   'ui.placeholder': 'type help to see commands',
   'ui.searchSettings': 'Search settings',
   'ui.close': 'Close',
@@ -391,14 +388,10 @@ const KO: Dict = {
   history         명령 기록
   reset           새 게임 (세이브 파일 유지)`,
 
-  'welcome.banner1': '======================================',
-  'welcome.title': '  DevQuest IDE — Terminal RPG v0.1',
-  'welcome.zones': '  초반 사냥터: forest1..forest3',
-  'welcome.inTown': '마을에 도착했습니다.',
-  'welcome.help': '  >>>  help  를 입력하면 명령어를 볼 수 있습니다  <<<',
-  'welcome.hint': '추천: status -> go forest1 -> hunt',
-  'welcome.lang': '언어 선택 → 아래 칩  한국어 / English  (또는 lang ko)',
-  'welcome.save': '저장 데이터가 있습니다. load 로 불러오세요.',
+  'welcome.title': 'DevQuest — Terminal RPG',
+  'welcome.hint': '시작: go forest1 → hunt  (아래 칩을 눌러도 됨)',
+  'welcome.lang': '언어: 아래 칩에서 한국어 / English 선택',
+  'welcome.save': '저장 데이터 있음 — load 로 이어하기',
 
   'err.unknownCmd': 'error: 알 수 없는 명령어: {cmd}  (help 입력)',
   'err.notInCombat': 'error: 전투 중이 아닙니다. 사냥터에서 hunt 하세요',
@@ -570,6 +563,7 @@ const KO: Dict = {
   'ui.inventory': '인벤토리',
   'ui.empty': '(비어 있음)',
   'ui.combatTarget': '전투 대상',
+  'ui.hudCombat': '전투중',
   'ui.placeholder': 'help 입력으로 명령어 보기',
   'ui.searchSettings': '설정 검색',
   'ui.close': '닫기',

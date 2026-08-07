@@ -402,13 +402,30 @@ body.compact-explorer .tree-hint {
 .cli-hud {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px 20px;
+  align-items: center;
+  gap: 8px 16px;
   padding: 10px 16px;
   background: color-mix(in srgb, var(--bg-editor) 88%, #000);
   border-bottom: 1px solid var(--border);
   font-family: var(--font-mono);
   font-size: 12px;
   flex-shrink: 0;
+}
+
+.hud-primary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 16px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.hud-vitals {
+  display: flex;
+  align-items: center;
+  gap: 10px 16px;
+  flex: 0 1 auto;
 }
 
 .hud-item {
@@ -445,24 +462,41 @@ body.compact-explorer .tree-hint {
   background: var(--exp);
 }
 
-.hud-mode {
+.hud-loc {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   margin-left: auto;
-  padding: 2px 8px;
+  max-width: 100%;
+  padding: 3px 10px;
+  border: 1px solid var(--border);
   border-radius: 2px;
-  font-size: 11px;
+  background: var(--bg-sidebar);
+  color: var(--fg-bright);
   font-weight: 600;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.02em;
 }
 
-.hud-mode.idle {
-  background: color-mix(in srgb, var(--success) 22%, transparent);
-  color: var(--success);
+.hud-loc-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.hud-mode.combat {
+.hud-loc-combat {
+  flex-shrink: 0;
+  padding: 1px 6px;
+  border-radius: 2px;
   background: color-mix(in srgb, var(--error) 22%, transparent);
   color: var(--error);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
   animation: pulse 1.2s ease-in-out infinite;
+}
+
+.hud-loc.combat {
+  border-color: color-mix(in srgb, var(--error) 45%, var(--border));
 }
 
 @keyframes pulse {
@@ -472,6 +506,20 @@ body.compact-explorer .tree-hint {
   }
   50% {
     opacity: 0.65;
+  }
+}
+
+@media (max-width: 900px) {
+  .hud-vitals {
+    flex: 1 1 100%;
+  }
+
+  .hud-loc {
+    margin-left: 0;
+  }
+
+  .hud-primary {
+    flex: 1 1 100%;
   }
 }
 

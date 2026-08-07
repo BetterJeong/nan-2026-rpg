@@ -73,7 +73,7 @@ function renderShell(): void {
         <div class="titlebar-dots"><span class="r"></span><span class="y"></span><span class="g"></span></div>
         <button type="button" class="titlebar-btn mobile-only" id="btn-explorer" title="Explorer" aria-label="Explorer">☰</button>
       </div>
-      <div class="titlebar-title" id="titlebar-title">DevQuest — nan-2026-rpg — terminal.rpg</div>
+      <div class="titlebar-title" id="titlebar-title">DevQuest — terminal.rpg</div>
       <div class="titlebar-right mobile-only">
         <button type="button" class="titlebar-btn" id="btn-inspector" title="Inspector" aria-label="Inspector">ℹ</button>
       </div>
@@ -355,7 +355,7 @@ function refresh(): void {
     title.textContent =
       view === 'settings'
         ? 'DevQuest — settings.json'
-        : 'DevQuest — nan-2026-rpg — terminal.rpg'
+        : 'DevQuest — terminal.rpg'
   }
   const cli = document.querySelector<HTMLInputElement>('#cli')
   if (cli) cli.placeholder = t('ui.placeholder')
@@ -388,25 +388,33 @@ function renderHud(): void {
   const expPct = Math.max(0, Math.min(100, (h.exp / h.expMax) * 100))
   const el = document.querySelector('#hud')
   if (!el) return
+  const inCombat = state.mode === 'combat'
   el.innerHTML = `
-    <div class="hud-item"><span class="hud-label">Lv</span><strong>${h.level}</strong></div>
-    <div class="hud-item">
-      <span class="hud-label">HP</span>
-      <div class="hud-bar hp"><i style="width:${hpPct}%"></i></div>
-      <span>${h.hp}/${h.maxHp}</span>
+    <div class="hud-primary">
+      <div class="hud-item"><span class="hud-label">Lv</span><strong>${h.level}</strong></div>
+      <div class="hud-item">
+        <span class="hud-label">EXP</span>
+        <div class="hud-bar exp"><i style="width:${expPct}%"></i></div>
+        <span>${h.exp}/${h.expMax}</span>
+      </div>
+      <div class="hud-item"><span class="hud-label">GOLD</span><span>${h.gold}G</span></div>
+      <div class="hud-loc ${inCombat ? 'combat' : ''}" title="${escapeAttr(h.location)}">
+        <span class="hud-loc-name">${escapeHtml(h.location)}</span>
+        ${inCombat ? `<span class="hud-loc-combat">${escapeHtml(t('ui.hudCombat'))}</span>` : ''}
+      </div>
     </div>
-    <div class="hud-item">
-      <span class="hud-label">MP</span>
-      <div class="hud-bar mp"><i style="width:${mpPct}%"></i></div>
-      <span>${h.mp}/${h.maxMp}</span>
+    <div class="hud-vitals">
+      <div class="hud-item">
+        <span class="hud-label">HP</span>
+        <div class="hud-bar hp"><i style="width:${hpPct}%"></i></div>
+        <span>${h.hp}/${h.maxHp}</span>
+      </div>
+      <div class="hud-item">
+        <span class="hud-label">MP</span>
+        <div class="hud-bar mp"><i style="width:${mpPct}%"></i></div>
+        <span>${h.mp}/${h.maxMp}</span>
+      </div>
     </div>
-    <div class="hud-item">
-      <span class="hud-label">EXP</span>
-      <div class="hud-bar exp"><i style="width:${expPct}%"></i></div>
-      <span>${h.exp}/${h.expMax}</span>
-    </div>
-    <div class="hud-item"><span class="hud-label">GOLD</span><span>${h.gold}G</span></div>
-    <div class="hud-mode ${state.mode === 'combat' ? 'combat' : 'idle'}">${h.mode}</div>
   `
 }
 
