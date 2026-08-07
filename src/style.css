@@ -84,12 +84,22 @@ body {
   background: var(--bg-page);
   color: var(--fg);
   font-family: var(--font-ui);
+  /* iOS: prevent rubber-band scroll shifting the app behind keyboard */
+  overscroll-behavior: none;
+  touch-action: manipulation;
 }
 
 #app {
-  height: 100%;
+  height: var(--app-height, 100dvh);
+  max-height: var(--app-height, 100dvh);
+  width: 100%;
   display: flex;
   flex-direction: column;
+  position: fixed;
+  top: var(--app-top, 0px);
+  left: 0;
+  right: 0;
+  overflow: hidden;
 }
 
 body.hide-inspector .inspector {
@@ -450,10 +460,13 @@ body.compact-explorer .tree-hint {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 16px 14px;
+  padding: 10px 16px calc(14px + env(safe-area-inset-bottom, 0px));
   border-top: 1px solid var(--border);
   background: color-mix(in srgb, var(--bg-editor) 92%, #000);
   flex-shrink: 0;
+  /* stick above soft keyboard via visualViewport-driven #app height */
+  position: relative;
+  z-index: 5;
 }
 
 .cli-prompt {
@@ -471,8 +484,11 @@ body.compact-explorer .tree-hint {
   outline: none;
   color: var(--fg-bright);
   font-family: var(--font-mono);
-  font-size: var(--term-font-size);
+  /* iOS zooms focused inputs under 16px */
+  font-size: max(16px, var(--term-font-size));
   caret-color: var(--accent);
+  /* prevent iOS Safari from auto-zooming / shifting oddly */
+  transform: translateZ(0);
 }
 
 .cli-input::placeholder {
@@ -788,5 +804,25 @@ body.view-settings .cli-hud {
   }
   .titlebar-dots {
     display: none;
+  }
+
+  /* Mobile: chat-like layout — more room for terminal + input above keyboard */
+  .titlebar {
+    height: 28px;
+  }
+  .statusbar {
+    display: none;
+  }
+  body.keyboard-open .tabbar {
+    display: none;
+  }
+  body.keyboard-open .cli-hud {
+    display: none;
+  }
+  .cli-input-row {
+    padding: 12px 12px calc(12px + env(safe-area-inset-bottom, 0px));
+  }
+  .settings-search {
+    font-size: 16px;
   }
 }

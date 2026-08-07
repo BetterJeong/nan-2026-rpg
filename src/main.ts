@@ -66,8 +66,9 @@ function renderShell(): void {
         <div class="settings-view" id="settings-view"></div>
         <div class="cli-input-row">
           <span class="cli-prompt" id="prompt">player@town:~$</span>
-          <input class="cli-input" id="cli" type="text" autocomplete="off" spellcheck="false"
-            placeholder="type a command (help)" autofocus />
+          <input class="cli-input" id="cli" type="text" enterkeyhint="send"
+            autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false"
+            placeholder="type a command (help)" />
         </div>
       </main>
       <aside class="inspector" id="inspector"></aside>
@@ -88,6 +89,23 @@ function renderShell(): void {
 
   const cli = document.querySelector<HTMLInputElement>('#cli')!
   cli.addEventListener('keydown', onKeyDown)
+  cli.addEventListener('focus', () => {
+    document.body.classList.add('keyboard-open')
+    syncVisualViewport()
+    // wait a frame for keyboard animation, then keep caret area visible
+    requestAnimationFrame(() => {
+      syncVisualViewport()
+      scrollTerminalToEnd()
+    })
+    setTimeout(() => {
+      syncVisualViewport()
+      scrollTerminalToEnd()
+    }, 300)
+  })
+  cli.addEventListener('blur', () => {
+    document.body.classList.remove('keyboard-open')
+    syncVisualViewport()
+  })
 
   document.querySelector('#explorer')!.addEventListener('click', (e) => {
     const t = (e.target as HTMLElement).closest('.tree-item') as HTMLElement | null
@@ -673,6 +691,46 @@ function escapeAttr(s: string): string {
   return escapeHtml(s).replace(/'/g, '&#39;')
 }
 
+function scrollTerminalToEnd(): void {
+  const term = document.querySelector('#terminal')
+  if (term) term.scrollTop = term.scrollHeight
+}
+
+function syncVisualViewport(): void {
+  const vv = window.visualViewport
+  const height = vv?.height ?? window.innerHeight
+  const offsetTop = vv?.offsetTop ?? 0
+  document.documentElement.style.setProperty('--app-height', `${Math.round(height)}px`)
+  document.documentElement.style.setProperty('--app-top', `${Math.round(offsetTop)}px`)
+
+  // Soft keyboard usually shrinks visualViewport vs layout viewport
+  const keyboardLikely = !!vv && vv.height < window.innerHeight * 0.85
+  const inputFocused = document.activeElement?.id === 'cli'
+  document.body.classList.toggle('keyboard-open', keyboardLikely || inputFocused)
+}
+
+function setupMobileLayout(): void {
+  syncVisualViewport()
+  const vv = window.visualViewport
+  if (vv) {
+    vv.addEventListener('resize', () => {
+      syncVisualViewport()
+      scrollTerminalToEnd()
+    })
+    vv.addEventListener('scroll', () => {
+      syncVisualViewport()
+    })
+  }
+  window.addEventListener('resize', syncVisualViewport)
+  window.addEventListener('orientationchange', () => {
+    setTimeout(syncVisualViewport, 200)
+  })
+}
+
+function isCoarsePointerMobile(): boolean {
+  return window.matchMedia('(max-width: 720px), (hover: none) and (pointer: coarse)').matches
+}
+
 function showFatal(err: unknown): void {
   const detail = err instanceof Error ? `${err.name}: ${err.message}` : String(err)
   app.innerHTML = `<pre style="padding:24px;color:#f14c4c;white-space:pre-wrap">
@@ -686,6 +744,7 @@ If the save is corrupt, clear localStorage and reload.</pre>`
 
 try {
   applySettingsToDom()
+  setupMobileLayout()
   renderShell()
   subscribeSettings(() => refresh())
   welcome(state)
@@ -695,7 +754,10 @@ try {
     `autosave every ${getAutosaveMinutes()} min · theme ${getSettings().theme} · open settings: settings`,
   )
   refresh()
-  document.querySelector<HTMLInputElement>('#cli')?.focus()
+  // Don't autofocus on mobile — opening keyboard on load covers the UI
+  if (!isCoarsePointerMobile()) {
+    document.querySelector<HTMLInputElement>('#cli')?.focus()
+  }
   startAutosave(autoSave)
 } catch (err) {
   showFatal(err)
