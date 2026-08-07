@@ -1,6 +1,7 @@
 # DevQuest — IDE Concept RPG
 
 VS Code 스타일 UI에서 CLI 명령으로 진행하는 웹 RPG입니다.  
+개발하는 척 몰래 게임을 즐겨보세요.
 
 플레이: https://betterjeong.github.io/nan-2026-rpg/
 
