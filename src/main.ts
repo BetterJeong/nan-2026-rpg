@@ -148,15 +148,20 @@ function renderShell(): void {
 
   document.querySelector('#cli-suggest')?.addEventListener('pointerdown', (e) => {
     const btn = (e.target as HTMLElement).closest('[data-cmd]')
-    if (btn) e.preventDefault() // keep keyboard open on mobile
+    if (!btn) return
+    // Don't let the chip steal focus / open the mobile keyboard layout jump
+    e.preventDefault()
   })
   document.querySelector('#cli-suggest')?.addEventListener('click', (e) => {
     if (commandBusy) return
     const btn = (e.target as HTMLElement).closest('[data-cmd]') as HTMLElement | null
     if (!btn?.dataset.cmd) return
     e.preventDefault()
+    // Keep input dock flat: no keyboard / keyboard-open layout shift from chip taps
+    const cli = document.querySelector<HTMLInputElement>('#cli')
+    cli?.blur()
+    document.body.classList.remove('keyboard-open')
     runCommand(btn.dataset.cmd)
-    document.querySelector<HTMLInputElement>('#cli')?.focus({ preventScroll: true })
   })
 
   document.querySelector('#explorer')!.addEventListener('click', (e) => {

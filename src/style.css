@@ -558,7 +558,8 @@ body.compact-explorer .tree-hint {
   white-space: nowrap;
   touch-action: manipulation;
   user-select: none;
-  transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+  box-shadow: none;
+  transform: none;
 }
 
 .cli-chip:hover,
@@ -567,10 +568,13 @@ body.compact-explorer .tree-hint {
   border-color: var(--accent);
   color: var(--fg-bright);
   background: color-mix(in srgb, var(--accent) 12%, var(--bg-sidebar));
+  box-shadow: none;
 }
 
 .cli-chip:active {
-  transform: scale(0.97);
+  border-color: var(--accent);
+  box-shadow: none;
+  transform: none;
 }
 
 body.cli-busy .cli-suggest {
@@ -600,12 +604,9 @@ body.cli-busy .cli-prompt::after {
   border-top: none;
 }
 
-body.keyboard-open .cli-dock {
-  box-shadow: 0 -8px 16px color-mix(in srgb, #000 25%, transparent);
-}
-
+/* Keep dock padding stable — avoid “pop” when keyboard opens/closes */
 body.keyboard-open .cli-input-row {
-  padding: 8px 12px 8px;
+  padding: 10px 16px 14px;
 }
 
 .cli-prompt {
@@ -1107,11 +1108,11 @@ body.view-settings .cli-hud {
   }
 
   body.keyboard-open .cli-input-row {
-    padding: 6px 12px 8px;
+    padding: 8px 12px calc(10px + env(safe-area-inset-bottom, 0px));
   }
 
   body.keyboard-open .cli-suggest {
-    padding-top: 6px;
+    padding-top: 8px;
   }
 
   .settings-search {
