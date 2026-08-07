@@ -518,22 +518,79 @@ body.compact-explorer .tree-hint {
   min-height: 0.4em;
 }
 
+.cli-dock {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 5;
+  background: var(--bg-editor);
+  border-top: 1px solid var(--border);
+}
+
+.cli-suggest {
+  display: flex;
+  gap: 8px;
+  padding: 8px 12px 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  overscroll-behavior-x: contain;
+}
+
+.cli-suggest::-webkit-scrollbar {
+  display: none;
+}
+
+.cli-chip {
+  flex: 0 0 auto;
+  appearance: none;
+  border: 1px solid var(--border);
+  background: var(--bg-sidebar);
+  color: var(--fg);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1;
+  padding: 8px 12px;
+  border-radius: 999px;
+  cursor: pointer;
+  white-space: nowrap;
+  touch-action: manipulation;
+  user-select: none;
+  transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+}
+
+.cli-chip:hover,
+.cli-chip:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+  color: var(--fg-bright);
+  background: color-mix(in srgb, var(--accent) 12%, var(--bg-sidebar));
+}
+
+.cli-chip:active {
+  transform: scale(0.97);
+}
+
 .cli-input-row {
   display: flex;
   align-items: center;
   gap: 8px;
   padding: 10px 16px 14px;
-  border-top: 1px solid var(--border);
-  background: var(--bg-editor);
+  background: transparent;
   flex-shrink: 0;
   position: relative;
   z-index: 5;
+  border-top: none;
+}
+
+body.keyboard-open .cli-dock {
+  box-shadow: 0 -8px 16px color-mix(in srgb, #000 25%, transparent);
 }
 
 body.keyboard-open .cli-input-row {
   padding: 8px 12px 8px;
-  border-top-color: var(--border);
-  box-shadow: 0 -8px 16px color-mix(in srgb, #000 25%, transparent);
 }
 
 .cli-prompt {
@@ -1020,12 +1077,26 @@ body.view-settings .cli-hud {
     padding: 6px 10px;
   }
 
+  .cli-suggest {
+    padding: 8px 12px 2px;
+    gap: 8px;
+  }
+
+  .cli-chip {
+    font-size: 13px;
+    padding: 10px 14px;
+  }
+
   .cli-input-row {
-    padding: 10px 12px calc(10px + env(safe-area-inset-bottom, 0px));
+    padding: 8px 12px calc(10px + env(safe-area-inset-bottom, 0px));
   }
 
   body.keyboard-open .cli-input-row {
-    padding: 8px 12px;
+    padding: 6px 12px 8px;
+  }
+
+  body.keyboard-open .cli-suggest {
+    padding-top: 6px;
   }
 
   .settings-search {

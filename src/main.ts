@@ -2,6 +2,7 @@ import './style.css'
 import { ZONES, MONSTERS, SKILLS } from './game/data/content'
 import { getItem } from './game/data/items'
 import { handleCommand, welcome, getHud } from './game/commands'
+import { getSuggestChips } from './game/suggest'
 import {
   createInitialState,
   saveGame,
@@ -81,11 +82,14 @@ function renderShell(): void {
           <div class="terminal" id="terminal"></div>
         </div>
         <div class="settings-view" id="settings-view"></div>
-        <div class="cli-input-row">
-          <span class="cli-prompt" id="prompt">player@town:~$</span>
-          <input class="cli-input" id="cli" type="text" enterkeyhint="send"
-            autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false"
-            placeholder="" />
+        <div class="cli-dock" id="cli-dock">
+          <div class="cli-suggest" id="cli-suggest" role="list" aria-label="Suggested commands"></div>
+          <div class="cli-input-row">
+            <span class="cli-prompt" id="prompt">player@town:~$</span>
+            <input class="cli-input" id="cli" type="text" enterkeyhint="send"
+              autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false"
+              placeholder="" />
+          </div>
         </div>
       </main>
       <aside class="inspector" id="inspector"></aside>
@@ -130,6 +134,18 @@ function renderShell(): void {
   document.querySelector('#btn-explorer')?.addEventListener('click', () => toggleExplorerDrawer())
   document.querySelector('#btn-inspector')?.addEventListener('click', () => toggleInspectorDrawer())
   document.querySelector('#mobile-backdrop')?.addEventListener('click', () => closeMobileDrawers())
+
+  document.querySelector('#cli-suggest')?.addEventListener('pointerdown', (e) => {
+    const btn = (e.target as HTMLElement).closest('[data-cmd]')
+    if (btn) e.preventDefault() // keep keyboard open on mobile
+  })
+  document.querySelector('#cli-suggest')?.addEventListener('click', (e) => {
+    const btn = (e.target as HTMLElement).closest('[data-cmd]') as HTMLElement | null
+    if (!btn?.dataset.cmd) return
+    e.preventDefault()
+    runCommand(btn.dataset.cmd)
+    document.querySelector<HTMLInputElement>('#cli')?.focus({ preventScroll: true })
+  })
 
   document.querySelector('#explorer')!.addEventListener('click', (e) => {
     const t = (e.target as HTMLElement).closest('.tree-item') as HTMLElement | null
@@ -241,6 +257,7 @@ function refresh(): void {
     renderTerminal()
     updatePrompt()
   }
+  renderSuggest()
   renderInspector()
   syncMobileDrawers()
   const sb = document.querySelector('#sb-loc')
@@ -318,6 +335,18 @@ function renderTerminal(): void {
     .map((m) => `<div class="term-line ${m.kind}">${escapeHtml(m.text)}</div>`)
     .join('')
   term.scrollTop = term.scrollHeight
+}
+
+function renderSuggest(): void {
+  const el = document.querySelector('#cli-suggest')
+  if (!el) return
+  const chips = getSuggestChips(state)
+  el.innerHTML = chips
+    .map(
+      (c) =>
+        `<button type="button" class="cli-chip" role="listitem" data-cmd="${escapeAttr(c.cmd)}" title="${escapeAttr(c.cmd)}">${escapeHtml(c.label)}</button>`,
+    )
+    .join('')
 }
 
 function renderExplorer(): void {
