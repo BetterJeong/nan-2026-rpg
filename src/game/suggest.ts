@@ -12,6 +12,35 @@ export type SuggestChip = {
 
 const MAX_CHIPS = 6
 
+function lastRawCmd(state: GameState): string {
+  return state.history[state.history.length - 1]?.trim().toLowerCase() ?? ''
+}
+
+function isInvFocus(state: GameState): boolean {
+  const last = lastRawCmd(state)
+  if (!last) return false
+  if (last === 'inv' || last === 'inventory' || last === 'i') return true
+  if (last.startsWith('equip ') || last.startsWith('unequip ') || last.startsWith('use ')) {
+    return true
+  }
+  return false
+}
+
+function equipChips(state: GameState, limit = 4): SuggestChip[] {
+  const chips: SuggestChip[] = []
+  const seenSlots = new Set<string>()
+  for (const e of state.player.inventory) {
+    if (chips.length >= limit) break
+    const item = getItem(e.itemId)
+    if (!item || item.kind !== 'equipment' || !item.slot || e.qty < 1) continue
+    // one suggest per slot (best first in bag order)
+    if (seenSlots.has(item.slot)) continue
+    seenSlots.add(item.slot)
+    chips.push({ cmd: `equip ${item.name}`, label: `equip ${item.name}` })
+  }
+  return chips
+}
+
 function firstConsumableCmd(state: GameState): SuggestChip | null {
   for (const e of state.player.inventory) {
     const item = getItem(e.itemId)
@@ -29,6 +58,17 @@ function firstUnlockedZone(state: GameState): string | null {
   return null
 }
 
+function pushUnique(chips: SuggestChip[], next: SuggestChip[]): SuggestChip[] {
+  const seen = new Set(chips.map((c) => c.cmd))
+  for (const c of next) {
+    if (seen.has(c.cmd)) continue
+    chips.push(c)
+    seen.add(c.cmd)
+    if (chips.length >= MAX_CHIPS) break
+  }
+  return chips
+}
+
 /** Contextual command chips for the input dock (mobile-friendly). */
 export function getSuggestChips(state: GameState): SuggestChip[] {
   if (getUiView() === 'settings') {
@@ -42,9 +82,7 @@ export function getSuggestChips(state: GameState): SuggestChip[] {
   }
 
   if (state.mode === 'combat' && state.combat) {
-    const chips: SuggestChip[] = [
-      { cmd: 'attack', label: 'attack' },
-    ]
+    const chips: SuggestChip[] = [{ cmd: 'attack', label: 'attack' }]
     const skillId = state.player.skills[0]
     if (skillId) {
       chips.push({ cmd: `skill ${skillId}`, label: `skill ${skillId}` })
@@ -52,48 +90,68 @@ export function getSuggestChips(state: GameState): SuggestChip[] {
     chips.push({ cmd: 'defend', label: 'defend' })
     const potion = firstConsumableCmd(state)
     if (potion) chips.push(potion)
-    chips.push({ cmd: 'flee', label: 'flee' })
-    chips.push({ cmd: 'status', label: 'status' })
+    chips.push({ cmd: 'flee', label: 'flee' }, { cmd: 'status', label: 'status' })
+    return chips.slice(0, MAX_CHIPS)
+  }
+
+  // After inv / equip: prioritize equipping gear from bag
+  if (isInvFocus(state)) {
+    const chips: SuggestChip[] = []
+    pushUnique(chips, equipChips(state, 4))
+    const potion = firstConsumableCmd(state)
+    if (potion) pushUnique(chips, [potion])
+    pushUnique(chips, [
+      { cmd: 'status', label: 'status' },
+      { cmd: 'inv', label: 'inv' },
+      { cmd: 'help', label: 'help' },
+    ])
     return chips.slice(0, MAX_CHIPS)
   }
 
   const loc = state.player.location
   const chips: SuggestChip[] = []
+  const gear = equipChips(state, 2)
 
   if (loc === 'town') {
     chips.push({ cmd: 'shop', label: 'shop' })
     const zone = firstUnlockedZone(state)
     if (zone) chips.push({ cmd: `go ${zone}`, label: `go ${zone}` })
-    chips.push(
+    // surface equip if bag has gear
+    pushUnique(chips, gear)
+    pushUnique(chips, [
       { cmd: 'status', label: 'status' },
       { cmd: 'inv', label: 'inv' },
       { cmd: 'help', label: 'help' },
       { cmd: 'save', label: 'save' },
-    )
+    ])
   } else if (loc === 'shop') {
     chips.push(
       { cmd: 'shop list', label: 'shop list' },
       { cmd: 'buy 1', label: 'buy 1' },
       { cmd: 'town', label: 'town' },
+    )
+    pushUnique(chips, gear)
+    pushUnique(chips, [
       { cmd: 'inv', label: 'inv' },
       { cmd: 'status', label: 'status' },
-    )
+    ])
   } else if (ZONES[loc]) {
-    chips.push(
-      { cmd: 'hunt', label: 'hunt' },
-      { cmd: 'town', label: 'town' },
+    chips.push({ cmd: 'hunt', label: 'hunt' }, { cmd: 'town', label: 'town' })
+    pushUnique(chips, gear)
+    pushUnique(chips, [
       { cmd: 'status', label: 'status' },
       { cmd: 'inv', label: 'inv' },
       { cmd: 'look', label: 'look' },
-    )
+    ])
     const potion = firstConsumableCmd(state)
-    if (potion) chips.push(potion)
+    if (potion) pushUnique(chips, [potion])
   } else {
-    chips.push(
+    pushUnique(chips, gear)
+    pushUnique(chips, [
       { cmd: 'town', label: 'town' },
       { cmd: 'help', label: 'help' },
       { cmd: 'status', label: 'status' },
-    )
+    ])
   }
 
   return chips.slice(0, MAX_CHIPS)

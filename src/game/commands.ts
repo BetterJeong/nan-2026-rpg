@@ -860,9 +860,13 @@ function formatInventory(state: GameState): string {
   const p = state.player
   if (!p.inventory.length) return t('inv.empty')
   const lines = [t('inv.head', { n: p.inventory.length, gold: p.gold }), '------------']
+  let firstGearName: string | null = null
   for (const e of p.inventory) {
     const item = getItem(e.itemId)
     if (!item) continue
+    if (!firstGearName && item.kind === 'equipment') {
+      firstGearName = item.name
+    }
     lines.push(
       t('inv.line', {
         kind: itemKindLabel(item),
@@ -872,6 +876,12 @@ function formatInventory(state: GameState): string {
         sell: item.sellPrice,
       }),
     )
+  }
+  lines.push('------------')
+  if (firstGearName) {
+    lines.push(t('inv.hint', { example: firstGearName }))
+  } else {
+    lines.push(t('inv.hintNone'))
   }
   return lines.join('\n')
 }
