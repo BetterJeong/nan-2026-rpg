@@ -77,7 +77,7 @@ function renderShell(): void {
           <span class="cli-prompt" id="prompt">player@town:~$</span>
           <input class="cli-input" id="cli" type="text" enterkeyhint="send"
             autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false"
-            placeholder="type a command (help)" />
+            placeholder="type help to see commands" />
         </div>
       </main>
       <aside class="inspector" id="inspector"></aside>

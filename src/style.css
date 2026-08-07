@@ -511,6 +511,11 @@ body.compact-explorer .tree-hint {
 }
 .term-line.success {
   color: var(--success);
+  font-weight: 600;
+}
+
+.term-line.success:empty {
+  min-height: 0.4em;
 }
 
 .cli-input-row {

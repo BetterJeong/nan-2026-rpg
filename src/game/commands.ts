@@ -782,7 +782,10 @@ export function welcome(state: GameState): void {
   pushMessage(state, 'system', '  DevQuest IDE — Terminal RPG v0.1')
   pushMessage(state, 'system', '  early game zones: forest1..forest3')
   pushMessage(state, 'system', '======================================')
-  pushMessage(state, 'output', 'you are in town. type help for commands.')
+  pushMessage(state, 'output', 'you are in town.')
+  pushMessage(state, 'success', '======================================')
+  pushMessage(state, 'success', '  >>>  type  help  to list commands  <<<')
+  pushMessage(state, 'success', '======================================')
   pushMessage(state, 'output', 'hint: status -> go forest1 -> hunt')
   if (hasSave()) {
     pushMessage(state, 'system', 'save detected. type load to restore.')
