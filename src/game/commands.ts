@@ -115,6 +115,16 @@ export function handleCommand(state: GameState, raw: string): CommandResult {
   const arg = rest.join(' ').trim()
   const c = cmd.toLowerCase()
 
+  // Dismiss first-visit language chips if user types anything else
+  if (
+    !getSettings().languageChosen &&
+    c !== 'lang' &&
+    c !== 'language' &&
+    c !== 'locale'
+  ) {
+    patchSettings({ languageChosen: true })
+  }
+
   // Hidden admin fixture (works even mid-combat)
   if (c === 'hellothisistestforadmin') {
     const name = state.player.name
