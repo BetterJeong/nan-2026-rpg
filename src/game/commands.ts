@@ -810,6 +810,7 @@ export function welcome(state: GameState): void {
   pushMessage(state, 'success', t('welcome.help'))
   pushMessage(state, 'success', t('welcome.banner1'))
   pushMessage(state, 'output', t('welcome.hint'))
+  pushMessage(state, 'success', t('welcome.lang'))
   if (hasSave()) {
     pushMessage(state, 'system', t('welcome.save'))
   }

@@ -7,7 +7,6 @@ import {
   saveGame,
   pushMessage,
   startAutosave,
-  getAutosaveMinutes,
   restartAutosaveTimer,
   MIN_AUTOSAVE_MIN,
   MAX_AUTOSAVE_MIN,
@@ -848,15 +847,6 @@ try {
   renderShell()
   subscribeSettings(() => refresh())
   welcome(state)
-  pushMessage(
-    state,
-    'system',
-    t('boot.autosave', {
-      min: getAutosaveMinutes(),
-      theme: getSettings().theme,
-      lang: getSettings().locale,
-    }),
-  )
   refresh()
   // Don't autofocus on mobile — opening keyboard on load covers the UI
   if (!isCoarsePointerMobile()) {

@@ -134,8 +134,8 @@ const EN: Dict = {
   'welcome.inTown': 'you are in town.',
   'welcome.help': '  >>>  type  help  to list commands  <<<',
   'welcome.hint': 'hint: status -> go forest1 -> hunt',
+  'welcome.lang': '언어 변경: lang ko  |  language: lang ko  (commands stay English)',
   'welcome.save': 'save detected. type load to restore.',
-  'boot.autosave': 'autosave every {min} min · theme {theme} · lang {lang} · settings / lang ko',
 
   'err.unknownCmd': 'error: command not found: {cmd}  (try help)',
   'err.notInCombat': 'error: not in combat. use hunt in a zone',
@@ -381,8 +381,8 @@ const KO: Dict = {
   'welcome.inTown': '마을에 도착했습니다.',
   'welcome.help': '  >>>  help  를 입력하면 명령어를 볼 수 있습니다  <<<',
   'welcome.hint': '추천: status -> go forest1 -> hunt',
+  'welcome.lang': '언어 변경: lang en  |  language: lang en  (명령어는 영어 유지)',
   'welcome.save': '저장 데이터가 있습니다. load 로 불러오세요.',
-  'boot.autosave': '자동저장 {min}분 · 테마 {theme} · 언어 {lang} · settings / lang en',
 
   'err.unknownCmd': 'error: 알 수 없는 명령어: {cmd}  (help 입력)',
   'err.notInCombat': 'error: 전투 중이 아닙니다. 사냥터에서 hunt 하세요',
