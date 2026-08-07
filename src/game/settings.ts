@@ -21,6 +21,8 @@ export type AppSettings = {
   showHud: boolean
   compactExplorer: boolean
   combatHints: boolean
+  /** When true, use faster message pacing (previous default speed). */
+  fastMode: boolean
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -32,6 +34,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   showHud: true,
   compactExplorer: false,
   combatHints: true,
+  fastMode: false,
 }
 
 export const FONT_SIZE_MIN = 11
@@ -99,6 +102,7 @@ function normalizeSettings(s: AppSettings): AppSettings {
     showHud: s.showHud !== false,
     compactExplorer: !!s.compactExplorer,
     combatHints: s.combatHints !== false,
+    fastMode: !!s.fastMode,
   }
 }
 
@@ -206,6 +210,7 @@ export function formatSettingsStatus(): string {
     `showHud:          ${s.showHud}`,
     `compactExplorer:  ${s.compactExplorer}`,
     `combatHints:      ${s.combatHints}`,
+    `fastMode:         ${s.fastMode}`,
     '',
     'CLI (no UI needed):',
     '  theme dark|light',
@@ -216,6 +221,7 @@ export function formatSettingsStatus(): string {
     '  hud on|off',
     '  explorer compact|normal',
     '  hints on|off',
+    '  fast on|off',
     'optional UI: settings | settings close',
   ].join('\n')
 }

@@ -123,6 +123,7 @@ const EN: Dict = {
   hud on|off
   explorer compact|normal
   hints on|off
+  fast on|off     faster message pacing (default: off = slower)
   autosave [min]  autosave interval (1-60)
   clear / cls     clear screen
   history         command history
@@ -170,6 +171,7 @@ const EN: Dict = {
   'err.usage.hints': 'usage: hints on | off',
   'err.usage.explorer': 'usage: explorer compact | normal',
   'err.usage.lang': 'usage: lang en | lang ko',
+  'err.usage.fast': 'usage: fast on | off  (or: pace fast | pace normal)',
   'err.usage.settings':
     'usage: settings | settings close | settings list | settings reset | settings appearance|game|terminal',
   'err.combatOnly': 'error: in combat use attack|skill|defend|use|flee',
@@ -201,6 +203,7 @@ const EN: Dict = {
   'ok.hints': 'combat hints {state}',
   'ok.explorer': 'explorer: {mode}',
   'ok.lang': 'language set to {lang}',
+  'ok.fast': 'fast mode {state}',
   'ok.lootItem': 'found item: {item}',
   'ok.lootGold': 'found gold pouch: +{gold}G (wallet {total}G)',
 
@@ -247,6 +250,7 @@ const EN: Dict = {
   'info.hints': 'combatHints: {value}',
   'info.explorer': 'compactExplorer: {value}  (explorer compact | normal)',
   'info.lang': 'language: {lang}  (lang en | lang ko)\ncommands stay in English.',
+  'info.fast': 'fastMode: {value}  (fast on = quicker text, off = slower default)',
 
   'stat.name': 'name: {name}  |  pwd: {loc}',
   'stat.level': 'level: {level}  |  EXP {exp}/{need}  |  gold {gold}G',
@@ -322,6 +326,8 @@ const EN: Dict = {
   'ui.showHudDesc': 'Top status strip (HP / MP / EXP)',
   'ui.combatHints': 'Combat Hints',
   'ui.combatHintsDesc': 'Print combat command hints when a battle starts',
+  'ui.fastMode': 'Fast Mode',
+  'ui.fastModeDesc': 'Quicker message pacing (off = slower, more dramatic)',
   'ui.fontSize': 'Font Size',
   'ui.fontSizeDesc': 'Terminal and prompt font size (11-18px)',
   'ui.dark': 'Dark+ (default)',
@@ -372,6 +378,7 @@ const KO: Dict = {
   hud on|off
   explorer compact|normal
   hints on|off
+  fast on|off     메시지 출력 빠르게 (기본 off = 천천히)
   autosave [min]  자동저장 간격 (1-60분)
   clear / cls     화면 지우기
   history         명령 기록
@@ -419,6 +426,7 @@ const KO: Dict = {
   'err.usage.hints': 'usage: hints on | off',
   'err.usage.explorer': 'usage: explorer compact | normal',
   'err.usage.lang': 'usage: lang en | lang ko',
+  'err.usage.fast': 'usage: fast on | off  (또는: pace fast | pace normal)',
   'err.usage.settings':
     'usage: settings | settings close | settings list | settings reset | settings appearance|game|terminal',
   'err.combatOnly': 'error: 전투 중에는 attack|skill|defend|use|flee 만 가능',
@@ -450,6 +458,7 @@ const KO: Dict = {
   'ok.hints': '전투 힌트 {state}',
   'ok.explorer': 'explorer: {mode}',
   'ok.lang': '언어: {lang}',
+  'ok.fast': '빠른 모드 {state}',
   'ok.lootItem': '아이템 획득: {item}',
   'ok.lootGold': '골드 획득: +{gold}G (보유 {total}G)',
 
@@ -496,6 +505,7 @@ const KO: Dict = {
   'info.hints': 'combatHints: {value}',
   'info.explorer': 'compactExplorer: {value}  (explorer compact | normal)',
   'info.lang': '언어: {lang}  (lang en | lang ko)\n명령어는 영어 그대로입니다.',
+  'info.fast': 'fastMode: {value}  (fast on = 빠르게, off = 기본 천천히)',
 
   'stat.name': '이름: {name}  |  위치: {loc}',
   'stat.level': '레벨: {level}  |  EXP {exp}/{need}  |  골드 {gold}G',
@@ -571,6 +581,8 @@ const KO: Dict = {
   'ui.showHudDesc': '상단 HP/MP/EXP 바',
   'ui.combatHints': '전투 힌트',
   'ui.combatHintsDesc': '전투 시작 시 명령 안내 출력',
+  'ui.fastMode': '빠른 모드',
+  'ui.fastModeDesc': '메시지 출력을 빠르게 (끄면 기본 천천히)',
   'ui.fontSize': '글자 크기',
   'ui.fontSizeDesc': '터미널·프롬프트 크기 (11-18px)',
   'ui.dark': 'Dark+ (기본)',

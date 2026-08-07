@@ -139,6 +139,7 @@ CLI에 `help`를 입력해도 동일한 목록을 볼 수 있습니다.
 | `hud on\|off` | 상단 HUD 표시 | `hud off` |
 | `explorer compact\|normal` | 왼쪽 탐색기 좁게/기본 | `explorer compact` |
 | `hints on\|off` | 전투 시작 시 명령 힌트 | `hints off` |
+| `fast on\|off` | 메시지 출력 속도 (on = 빠르게, 기본 off = 천천히) | `fast on` |
 | `settings list` | 현재 설정 값 출력 | `settings list` |
 | `settings reset` | 설정 기본값 복구 | `settings reset` |
 

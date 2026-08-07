@@ -4,6 +4,14 @@ import { getItem } from './game/data/items'
 import { handleCommand, welcome, getHud } from './game/commands'
 import { getSuggestChips } from './game/suggest'
 import {
+  classifyCommand,
+  leadDelay,
+  lineDelay,
+  sleep,
+  type PaceKind,
+} from './game/pacing'
+import type { TerminalLine } from './game/types'
+import {
   createInitialState,
   saveGame,
   pushMessage,
@@ -46,6 +54,9 @@ let draft = ''
 let settingsQuery = ''
 let explorerOpen = false
 let inspectorOpen = false
+/** True while command results are being paced onto the terminal. */
+let commandBusy = false
+let paceToken = 0
 
 const app = document.querySelector<HTMLDivElement>('#app')!
 
@@ -140,6 +151,7 @@ function renderShell(): void {
     if (btn) e.preventDefault() // keep keyboard open on mobile
   })
   document.querySelector('#cli-suggest')?.addEventListener('click', (e) => {
+    if (commandBusy) return
     const btn = (e.target as HTMLElement).closest('[data-cmd]') as HTMLElement | null
     if (!btn?.dataset.cmd) return
     e.preventDefault()
@@ -209,8 +221,73 @@ function onKeyDown(e: KeyboardEvent): void {
 }
 
 function runCommand(raw: string): void {
-  handleCommand(state, raw)
+  const line = raw.trim()
+  if (!line) return
+  if (commandBusy) return
+
+  const inCombatBefore = state.mode === 'combat'
+  let pace: PaceKind = classifyCommand(line)
+  if (inCombatBefore && pace === 'action') {
+    // potions / misc during battle should feel like combat turns
+    const cmd = line.split(/\s+/)[0]?.toLowerCase()
+    if (cmd === 'use') pace = 'combat'
+  }
+
+  const beforeLen = state.messages.length
+  handleCommand(state, line)
+  const generated = state.messages.splice(beforeLen) as TerminalLine[]
+
+  // Instant path for clear — already wiped; just refresh
+  const cmd = line.split(/\s+/)[0]?.toLowerCase()
+  if (cmd === 'clear' || cmd === 'cls') {
+    refresh()
+    return
+  }
+
+  void revealMessages(generated, pace, inCombatBefore || state.mode === 'combat')
+}
+
+async function revealMessages(
+  lines: TerminalLine[],
+  pace: PaceKind,
+  inCombat: boolean,
+): Promise<void> {
+  const token = ++paceToken
+  commandBusy = true
+  setCliBusy(true)
+
+  // Show typed input immediately
+  let i = 0
+  if (lines[0]?.kind === 'input') {
+    state.messages.push(lines[0])
+    refresh()
+    i = 1
+    await sleep(leadDelay(pace, inCombat))
+    if (token !== paceToken) return
+  }
+
+  for (; i < lines.length; i++) {
+    if (token !== paceToken) return
+    const msg = lines[i]
+    await sleep(lineDelay(pace, msg, i, inCombat))
+    if (token !== paceToken) return
+    state.messages.push(msg)
+    refresh()
+  }
+
+  if (token !== paceToken) return
+  commandBusy = false
+  setCliBusy(false)
   refresh()
+}
+
+function setCliBusy(busy: boolean): void {
+  document.body.classList.toggle('cli-busy', busy)
+  const cli = document.querySelector<HTMLInputElement>('#cli')
+  if (cli) {
+    cli.disabled = busy
+    cli.placeholder = busy ? '…' : t('ui.placeholder')
+  }
 }
 
 function syncMobileDrawers(): void {
@@ -510,6 +587,13 @@ function renderSettings(): void {
             'combatHints',
             s.combatHints,
           ),
+          settingToggle(
+            t('ui.fastMode'),
+            t('ui.fastModeDesc'),
+            'fast on|off',
+            'fastMode',
+            s.fastMode,
+          ),
         ],
       )}
       ${renderSettingsSection(
@@ -587,6 +671,7 @@ function renderSettings(): void {
       else if (key === 'showHud') applyPatch({ showHud: next })
       else if (key === 'compactExplorer') applyPatch({ compactExplorer: next })
       else if (key === 'combatHints') applyPatch({ combatHints: next })
+      else if (key === 'fastMode') applyPatch({ fastMode: next })
     })
   })
 }
@@ -754,6 +839,7 @@ function renderInspector(): void {
         <h3>${t('ui.environment')}</h3>
         <div class="insp-row"><span class="k">Theme</span><span class="v">${s.theme}</span></div>
         <div class="insp-row"><span class="k">Lang</span><span class="v">${s.locale}</span></div>
+        <div class="insp-row"><span class="k">Fast</span><span class="v">${s.fastMode ? 'on' : 'off'}</span></div>
         <div class="insp-row"><span class="k">Autosave</span><span class="v">${s.autosaveMinutes}m</span></div>
         <div class="insp-row"><span class="k">Font</span><span class="v">${s.fontSize}px</span></div>
       </div>

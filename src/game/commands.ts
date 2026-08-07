@@ -244,6 +244,32 @@ export function handleCommand(state: GameState, raw: string): CommandResult {
       break
     }
 
+    case 'fast':
+    case 'pace':
+    case 'speed': {
+      if (!arg) {
+        pushMessage(
+          state,
+          'output',
+          t('info.fast', { value: getSettings().fastMode ? 'on' : 'off' }),
+        )
+        break
+      }
+      const a = arg.toLowerCase()
+      let v: boolean | null = parseOnOff(arg)
+      if (v === null) {
+        if (a === 'fast') v = true
+        else if (a === 'normal' || a === 'slow' || a === 'default') v = false
+      }
+      if (v === null) {
+        pushMessage(state, 'error', t('err.usage.fast'))
+        break
+      }
+      patchSettings({ fastMode: v })
+      pushMessage(state, 'success', t('ok.fast', { state: v ? 'on' : 'off' }))
+      break
+    }
+
     case 'explorer': {
       const a = arg.toLowerCase()
       if (!a) {

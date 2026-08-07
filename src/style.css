@@ -573,6 +573,21 @@ body.compact-explorer .tree-hint {
   transform: scale(0.97);
 }
 
+body.cli-busy .cli-suggest {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+body.cli-busy .cli-input {
+  opacity: 0.75;
+}
+
+body.cli-busy .cli-prompt::after {
+  content: ' …';
+  color: var(--fg-dim);
+  font-weight: 400;
+}
+
 .cli-input-row {
   display: flex;
   align-items: center;
