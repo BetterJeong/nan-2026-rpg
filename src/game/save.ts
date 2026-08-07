@@ -2,6 +2,11 @@ import type { GameState, TerminalLine } from './types'
 import { createNewPlayer } from './player'
 
 const SAVE_KEY = 'nan-2026-rpg-save'
+const AUTOSAVE_KEY = 'nan-2026-rpg-autosave-min'
+
+export const DEFAULT_AUTOSAVE_MIN = 5
+export const MIN_AUTOSAVE_MIN = 1
+export const MAX_AUTOSAVE_MIN = 60
 
 export function createInitialState(): GameState {
   return {
@@ -60,4 +65,38 @@ export function hasSave(): boolean {
 
 export function deleteSave(): void {
   localStorage.removeItem(SAVE_KEY)
+}
+
+export function getAutosaveMinutes(): number {
+  const raw = localStorage.getItem(AUTOSAVE_KEY)
+  if (!raw) return DEFAULT_AUTOSAVE_MIN
+  const n = parseInt(raw, 10)
+  if (!Number.isFinite(n) || n < MIN_AUTOSAVE_MIN || n > MAX_AUTOSAVE_MIN) {
+    return DEFAULT_AUTOSAVE_MIN
+  }
+  return n
+}
+
+/** Persist interval (1–60 min). Returns error message or null on success. */
+export function setAutosaveMinutes(minutes: number): string | null {
+  if (!Number.isInteger(minutes) || minutes < MIN_AUTOSAVE_MIN || minutes > MAX_AUTOSAVE_MIN) {
+    return `error: autosave interval must be ${MIN_AUTOSAVE_MIN}-${MAX_AUTOSAVE_MIN} minutes`
+  }
+  localStorage.setItem(AUTOSAVE_KEY, String(minutes))
+  return null
+}
+
+let autosaveTimer: ReturnType<typeof setInterval> | null = null
+let autosaveTick: (() => void) | null = null
+
+export function startAutosave(onTick: () => void): void {
+  autosaveTick = onTick
+  restartAutosaveTimer()
+}
+
+export function restartAutosaveTimer(): void {
+  if (autosaveTimer != null) clearInterval(autosaveTimer)
+  if (!autosaveTick) return
+  const ms = getAutosaveMinutes() * 60 * 1000
+  autosaveTimer = setInterval(autosaveTick, ms)
 }

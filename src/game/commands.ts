@@ -25,7 +25,20 @@ import {
   unequipItem,
   useConsumable,
 } from './player'
-import { pushMessage, saveGame, loadGame, hasSave, clearMessages, createInitialState } from './save'
+import {
+  pushMessage,
+  saveGame,
+  loadGame,
+  hasSave,
+  clearMessages,
+  createInitialState,
+  getAutosaveMinutes,
+  setAutosaveMinutes,
+  restartAutosaveTimer,
+  DEFAULT_AUTOSAVE_MIN,
+  MIN_AUTOSAVE_MIN,
+  MAX_AUTOSAVE_MIN,
+} from './save'
 import type { GameState, ItemDef } from './types'
 import { SLOT_LABELS, SLOT_ORDER } from './types'
 
@@ -77,6 +90,7 @@ available commands
   help            this help
   save            save game
   load            load save
+  autosave [min]  show/set autosave interval (1-60, default 5)
   clear / cls     clear screen
   history         command history
   reset           new game (keeps save file)
@@ -123,6 +137,34 @@ export function handleCommand(state: GameState, raw: string): CommandResult {
     case 'save':
       pushMessage(state, 'success', saveGame(state))
       break
+
+    case 'autosave': {
+      if (!arg) {
+        pushMessage(
+          state,
+          'output',
+          `autosave: every ${getAutosaveMinutes()} min (default ${DEFAULT_AUTOSAVE_MIN}, range ${MIN_AUTOSAVE_MIN}-${MAX_AUTOSAVE_MIN})\nusage: autosave <minutes>`,
+        )
+        break
+      }
+      const mins = Number(arg)
+      if (!/^\d+$/.test(arg) || !Number.isInteger(mins)) {
+        pushMessage(
+          state,
+          'error',
+          `error: usage autosave <${MIN_AUTOSAVE_MIN}-${MAX_AUTOSAVE_MIN}>`,
+        )
+        break
+      }
+      const err = setAutosaveMinutes(mins)
+      if (err) {
+        pushMessage(state, 'error', err)
+        break
+      }
+      restartAutosaveTimer()
+      pushMessage(state, 'success', `autosave interval set to ${mins} min`)
+      break
+    }
 
     case 'load': {
       if (!hasSave()) {

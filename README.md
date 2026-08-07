@@ -26,7 +26,8 @@ VS Code 스타일 UI에서 CLI 명령으로 진행하는 웹 RPG입니다.
 4. 전투 시 `attack` / `skill slash` / `defend` / `use hp-potion-s` / `flee`  
 5. `town` → `shop` — 포션·장비 구매 / 판매  
 6. `equip wood-sword` — 장비 장착  
-7. `save` — 진행 저장 (브라우저 localStorage)
+7. `save` — 진행 저장 (브라우저 localStorage)  
+   - 기본 **5분마다 자동저장** (`autosave <분>` 으로 1~60분 변경 가능)
 
 ### 탐색 이벤트 (`hunt`)
 
@@ -109,11 +110,50 @@ CLI에 `help`를 입력해도 동일한 목록을 볼 수 있습니다.
 | 명령 | 별칭 | 설명 | 예시 |
 |------|------|------|------|
 | `help` | `?`, `man` | 전체 명령어 도움말 | `help` |
-| `save` | — | 현재 상태를 localStorage에 저장 | `save` |
+| `save` | — | 현재 상태를 localStorage에 저장. **자동 저장**도 동작 (기본 5분) | `save` |
+| `autosave` | — | 현재 자동저장 간격 확인 | `autosave` |
+| `autosave <min>` | — | 자동저장 간격 변경 (**1~60분**, localStorage에 유지) | `autosave 10` |
 | `load` | — | 저장 데이터 불러오기 | `load` |
 | `clear` | `cls` | CLI 화면 지우기 | `clear` |
 | `history` | — | 최근 입력 명령 기록 보기 (↑/↓ 키로도 재입력 가능) | `history` |
 | `reset` | — | 새 게임 시작. 저장 파일은 삭제되지 않음 (덮어쓰려면 `save`) | `reset` |
+
+### 저장 / 자동저장
+
+진행 데이터는 서버가 아니라 **브라우저 localStorage**에 저장됩니다.
+
+| 구분 | 키 | 내용 |
+|------|-----|------|
+| 게임 세이브 | `nan-2026-rpg-save` | 레벨, HP/MP, 골드, 인벤, 장비, 위치 등 |
+| 자동저장 간격 | `nan-2026-rpg-autosave-min` | 분 단위 간격 설정 |
+
+#### 수동 저장
+
+| 명령 | 설명 |
+|------|------|
+| `save` | 지금 상태를 즉시 저장 |
+| `load` | 저장된 상태 불러오기 |
+
+- 전투 중 `save` 해도 **전투 상태는 저장되지 않음** (위치·스탯·인벤만 유지)
+- 같은 브라우저·같은 사이트에서만 유지됨 (시크릿 모드/저장소 삭제 시 사라짐)
+
+#### 자동저장
+
+| 항목 | 값 |
+|------|-----|
+| 기본 간격 | **5분** |
+| 변경 가능 범위 | **1분 ~ 60분 (1시간)** |
+| 동작 | 타이머마다 `save`와 동일하게 localStorage에 기록 |
+| CLI 알림 | `autosave: game saved. (localStorage)` |
+
+```text
+autosave        # 현재 간격 확인
+autosave 10     # 10분마다 자동저장
+autosave 1      # 최소 1분
+autosave 60     # 최대 1시간
+```
+
+간격 설정은 게임 세이브와 **별도로** 저장되므로, `reset`을 해도 자동저장 주기는 유지됩니다.
 
 ---
 

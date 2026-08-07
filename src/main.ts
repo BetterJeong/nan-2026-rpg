@@ -2,7 +2,13 @@ import './style.css'
 import { ZONES, MONSTERS, SKILLS } from './game/data/content'
 import { getItem } from './game/data/items'
 import { handleCommand, welcome, getHud } from './game/commands'
-import { createInitialState } from './game/save'
+import {
+  createInitialState,
+  saveGame,
+  pushMessage,
+  startAutosave,
+  getAutosaveMinutes,
+} from './game/save'
 import { getTotalAtk, getTotalDef, getEffectiveMaxHp, getEffectiveMaxMp } from './game/player'
 import { SLOT_LABELS, SLOT_ORDER } from './game/types'
 import type { GameState } from './game/types'
@@ -13,6 +19,11 @@ let draft = ''
 
 const app = document.querySelector<HTMLDivElement>('#app')!
 
+function autoSave(): void {
+  const msg = saveGame(state)
+  pushMessage(state, 'system', `autosave: ${msg}`)
+  refresh()
+}
 function renderShell(): void {
   app.innerHTML = `
     <div class="titlebar">
@@ -297,8 +308,14 @@ If the save is corrupt, clear localStorage and reload.</pre>`
 try {
   renderShell()
   welcome(state)
+  pushMessage(
+    state,
+    'system',
+    `autosave every ${getAutosaveMinutes()} min (change: autosave <1-60>)`,
+  )
   refresh()
   document.querySelector<HTMLInputElement>('#cli')?.focus()
+  startAutosave(autoSave)
 } catch (err) {
   showFatal(err)
   throw err
