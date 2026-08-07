@@ -1,5 +1,6 @@
 import { ITEMS, getItem } from './data/items'
 import { SKILLS, expToNext } from './data/content'
+import { itemLabel, itemMatchesQuery, skillLabel, t } from './i18n'
 import type { EquipSlot, InventoryEntry, PlayerState } from './types'
 import { SLOT_ORDER } from './types'
 
@@ -97,9 +98,9 @@ export function removeItem(player: PlayerState, itemId: string, qty = 1): boolea
 export function useConsumable(player: PlayerState, itemId: string): string | null {
   const item = getItem(itemId)
   if (!item || item.kind !== 'consumable' || !item.effect) {
-    return 'error: not a usable consumable'
+    return t('player.errNotConsumable')
   }
-  if (inventoryQty(player, itemId) < 1) return 'error: item not found'
+  if (inventoryQty(player, itemId) < 1) return t('player.errNoItem')
 
   removeItem(player, itemId, 1)
   const maxHp = getEffectiveMaxHp(player)
@@ -117,15 +118,15 @@ export function useConsumable(player: PlayerState, itemId: string): string | nul
     parts.push(`MP ${before} -> ${player.mp}`)
   }
 
-  return `used ${item.name}. ${parts.join(', ')}`
+  return t('player.used', { item: itemLabel(item), parts: parts.join(', ') })
 }
 
 export function equipItem(player: PlayerState, itemId: string): string {
   const item = getItem(itemId)
   if (!item || item.kind !== 'equipment' || !item.slot) {
-    return 'error: not equippable'
+    return t('player.errNotEquip')
   }
-  if (inventoryQty(player, itemId) < 1) return 'error: item not found'
+  if (inventoryQty(player, itemId) < 1) return t('player.errNoItem')
 
   const slot = item.slot as EquipSlot
   const prev = player.equipment[slot]
@@ -133,20 +134,23 @@ export function equipItem(player: PlayerState, itemId: string): string {
   if (prev) addItem(player, prev, 1)
   player.equipment[slot] = itemId
   clampVitals(player)
-  return `equipped ${item.name}${prev ? ` (unequipped ${getItem(prev)?.name})` : ''}`
+  const prevText = prev
+    ? t('player.unequippedPrev', { item: itemLabel(prev) })
+    : ''
+  return t('player.equipped', { item: itemLabel(item), prev: prevText })
 }
 
 export function unequipItem(player: PlayerState, slotOrName: string): string {
   const slot = resolveSlot(slotOrName)
   if (!slot) {
-    return 'error: invalid slot (helmet|armor|legs|boots|gloves|weapon|ring|necklace)'
+    return t('player.errSlot')
   }
   const id = player.equipment[slot]
-  if (!id) return 'error: nothing equipped in that slot'
+  if (!id) return t('player.errEmptySlot')
   delete player.equipment[slot]
   addItem(player, id, 1)
   clampVitals(player)
-  return `unequipped ${getItem(id)?.name}`
+  return t('player.unequipped', { item: itemLabel(id) })
 }
 
 function resolveSlot(q: string): EquipSlot | null {
@@ -186,37 +190,37 @@ export function applyLevelUps(player: PlayerState): string[] {
     for (const skill of Object.values(SKILLS)) {
       if (skill.unlockLevel === player.level && !player.skills.includes(skill.id)) {
         player.skills.push(skill.id)
-        logs.push(`skill unlocked: ${skill.name}`)
+        logs.push(t('player.skillUnlock', { skill: skillLabel(skill.id) }))
       }
     }
 
     logs.push(
-      `level up! Lv.${player.level} | ATK ${player.baseAtk} / DEF ${player.baseDef} | HP/MP restored`,
+      t('player.levelUp', {
+        level: player.level,
+        atk: player.baseAtk,
+        def: player.baseDef,
+      }),
     )
   }
   return logs
 }
 
 export function findInventoryItem(player: PlayerState, query: string): InventoryEntry | undefined {
-  const q = query.trim().toLowerCase()
   return player.inventory.find((e) => {
     const item = getItem(e.itemId)
     if (!item) return false
-    return item.id === q || item.name.toLowerCase() === q || item.name === query.trim()
+    return itemMatchesQuery(item, query)
   })
 }
 
 export function findOwnedOrEquipped(player: PlayerState, query: string): string | null {
   const inv = findInventoryItem(player, query)
   if (inv) return inv.itemId
-  const q = query.trim().toLowerCase()
   for (const slot of SLOT_ORDER) {
     const id = player.equipment[slot]
     if (!id) continue
     const item = getItem(id)
-    if (item && (item.id === q || item.name.toLowerCase() === q || item.name === query.trim())) {
-      return id
-    }
+    if (item && itemMatchesQuery(item, query)) return id
   }
   return null
 }

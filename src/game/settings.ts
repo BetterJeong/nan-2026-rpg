@@ -3,6 +3,7 @@ import {
   MIN_AUTOSAVE_MIN,
   MAX_AUTOSAVE_MIN,
 } from './save'
+import { getLang, setLang, t, type Lang } from './i18n'
 
 const SETTINGS_KEY = 'nan-2026-rpg-settings'
 /** Legacy key from before settings object */
@@ -13,6 +14,7 @@ export type SettingsCategory = 'appearance' | 'game' | 'terminal'
 
 export type AppSettings = {
   theme: ThemeId
+  locale: Lang
   autosaveMinutes: number
   fontSize: number
   showInspector: boolean
@@ -23,6 +25,7 @@ export type AppSettings = {
 
 export const DEFAULT_SETTINGS: AppSettings = {
   theme: 'dark',
+  locale: 'en',
   autosaveMinutes: DEFAULT_AUTOSAVE_MIN,
   fontSize: 13,
   showInspector: true,
@@ -38,6 +41,9 @@ let settings: AppSettings = loadSettings()
 let uiView: 'game' | 'settings' = 'game'
 let settingsCategory: SettingsCategory = 'appearance'
 let listeners: Array<() => void> = []
+
+// sync i18n with persisted locale on boot
+setLang(settings.locale)
 
 export function subscribeSettings(fn: () => void): () => void {
   listeners.push(fn)
@@ -73,6 +79,7 @@ function loadSettings(): AppSettings {
 
 function normalizeSettings(s: AppSettings): AppSettings {
   const theme: ThemeId = s.theme === 'light' ? 'light' : 'dark'
+  const locale: Lang = s.locale === 'ko' ? 'ko' : 'en'
   let autosaveMinutes = Math.floor(Number(s.autosaveMinutes))
   if (!Number.isFinite(autosaveMinutes) || autosaveMinutes < MIN_AUTOSAVE_MIN) {
     autosaveMinutes = DEFAULT_AUTOSAVE_MIN
@@ -85,6 +92,7 @@ function normalizeSettings(s: AppSettings): AppSettings {
 
   return {
     theme,
+    locale,
     autosaveMinutes,
     fontSize,
     showInspector: s.showInspector !== false,
@@ -114,7 +122,7 @@ export function patchSettings(partial: Partial<AppSettings>): PatchResult {
     if (!Number.isInteger(n) || n < MIN_AUTOSAVE_MIN || n > MAX_AUTOSAVE_MIN) {
       return {
         ok: false,
-        error: `error: autosave interval must be ${MIN_AUTOSAVE_MIN}-${MAX_AUTOSAVE_MIN} minutes`,
+        error: t('err.usage.autosave', { min: MIN_AUTOSAVE_MIN, max: MAX_AUTOSAVE_MIN }),
       }
     }
   }
@@ -123,17 +131,21 @@ export function patchSettings(partial: Partial<AppSettings>): PatchResult {
     if (!Number.isInteger(n) || n < FONT_SIZE_MIN || n > FONT_SIZE_MAX) {
       return {
         ok: false,
-        error: `error: font size must be ${FONT_SIZE_MIN}-${FONT_SIZE_MAX}`,
+        error: t('err.usage.fontsize', { min: FONT_SIZE_MIN, max: FONT_SIZE_MAX }),
       }
     }
   }
   if (partial.theme != null && partial.theme !== 'dark' && partial.theme !== 'light') {
-    return { ok: false, error: 'error: theme must be dark | light' }
+    return { ok: false, error: t('err.usage.theme') }
+  }
+  if (partial.locale != null && partial.locale !== 'en' && partial.locale !== 'ko') {
+    return { ok: false, error: t('err.usage.lang') }
   }
 
   const next = normalizeSettings({ ...settings, ...partial })
   const autosaveChanged = next.autosaveMinutes !== settings.autosaveMinutes
   settings = next
+  setLang(settings.locale)
   persist()
   applySettingsToDom()
   notify()
@@ -142,6 +154,7 @@ export function patchSettings(partial: Partial<AppSettings>): PatchResult {
 
 export function resetSettings(): void {
   settings = { ...DEFAULT_SETTINGS }
+  setLang(settings.locale)
   persist()
   applySettingsToDom()
   notify()
@@ -149,6 +162,7 @@ export function resetSettings(): void {
 
 export function applySettingsToDom(): void {
   document.documentElement.dataset.theme = settings.theme
+  document.documentElement.lang = settings.locale === 'ko' ? 'ko' : 'en'
   document.documentElement.style.setProperty('--term-font-size', `${settings.fontSize}px`)
   document.body.classList.toggle('hide-inspector', !settings.showInspector)
   document.body.classList.toggle('hide-hud', !settings.showHud)
@@ -185,6 +199,7 @@ export function formatSettingsStatus(): string {
     'settings',
     '--------',
     `theme:            ${s.theme}`,
+    `lang:             ${s.locale}`,
     `autosave:         ${s.autosaveMinutes} min`,
     `fontSize:         ${s.fontSize}px`,
     `showInspector:    ${s.showInspector}`,
@@ -194,6 +209,7 @@ export function formatSettingsStatus(): string {
     '',
     'CLI (no UI needed):',
     '  theme dark|light',
+    '  lang en|ko',
     `  autosave <${MIN_AUTOSAVE_MIN}-${MAX_AUTOSAVE_MIN}>`,
     `  fontsize <${FONT_SIZE_MIN}-${FONT_SIZE_MAX}>`,
     '  inspector on|off',
@@ -207,3 +223,5 @@ export function formatSettingsStatus(): string {
 export function shouldShowCombatHints(): boolean {
   return settings.combatHints
 }
+
+export { getLang }

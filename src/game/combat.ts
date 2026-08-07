@@ -1,5 +1,13 @@
 import { MONSTERS, SKILLS } from './data/content'
 import { getItem } from './data/items'
+import {
+  itemLabel,
+  itemMatchesQuery,
+  monsterLabel,
+  skillLabel,
+  skillMatchesQuery,
+  t,
+} from './i18n'
 import type { CombatState, PlayerState } from './types'
 import {
   addItem,
@@ -30,7 +38,7 @@ export function startCombat(monsterId: string): CombatState {
     monsterMaxHp: m.hp,
     playerDefending: false,
     turn: 'player',
-    log: [`A wild ${m.name} (Lv.${m.level}) appears!`],
+    log: [t('combat.appear', { name: monsterLabel(monsterId), level: m.level })],
   }
 }
 
@@ -46,7 +54,12 @@ export function playerAttack(player: PlayerState, combat: CombatState): CombatRe
   const dmg = calcDamage(getTotalAtk(player), m.def)
   combat.monsterHp = Math.max(0, combat.monsterHp - dmg)
   const messages = [
-    `attack -> ${m.name} took ${dmg} dmg. (HP ${combat.monsterHp}/${combat.monsterMaxHp})`,
+    t('combat.attack', {
+      name: monsterLabel(combat.monsterId),
+      dmg,
+      hp: combat.monsterHp,
+      max: combat.monsterMaxHp,
+    }),
   ]
   combat.playerDefending = false
 
@@ -62,13 +75,13 @@ export function playerSkill(
   skillId: string,
 ): CombatResult {
   const skill = SKILLS[skillId]
-  if (!skill) return { messages: ['error: unknown skill'], ended: false }
+  if (!skill) return { messages: [t('combat.errSkill')], ended: false }
   if (!player.skills.includes(skillId)) {
-    return { messages: ['error: skill not unlocked'], ended: false }
+    return { messages: [t('combat.errLocked')], ended: false }
   }
   if (player.mp < skill.mpCost) {
     return {
-      messages: [`error: not enough MP (need ${skill.mpCost}, have ${player.mp})`],
+      messages: [t('combat.errMp', { need: skill.mpCost, have: player.mp })],
       ended: false,
     }
   }
@@ -77,12 +90,20 @@ export function playerSkill(
   combat.playerDefending = false
   const m = MONSTERS[combat.monsterId]
   const messages: string[] = []
+  const sName = skillLabel(skillId)
 
   if (skill.heal) {
     const maxHp = getEffectiveMaxHp(player)
     const before = player.hp
     player.hp = Math.min(maxHp, player.hp + skill.heal)
-    messages.push(`${skill.name}! HP ${before} -> ${player.hp} (MP -${skill.mpCost})`)
+    messages.push(
+      t('combat.skillHeal', {
+        skill: sName,
+        before,
+        after: player.hp,
+        mp: skill.mpCost,
+      }),
+    )
     return enemyTurn(player, combat, messages)
   }
 
@@ -92,7 +113,14 @@ export function playerSkill(
   const dmg = calcDamage(atk, m.def, 0.12)
   combat.monsterHp = Math.max(0, combat.monsterHp - dmg)
   messages.push(
-    `${skill.name}! ${m.name} took ${dmg} dmg. (MP -${skill.mpCost}, HP ${combat.monsterHp}/${combat.monsterMaxHp})`,
+    t('combat.skillDmg', {
+      skill: sName,
+      name: monsterLabel(combat.monsterId),
+      dmg,
+      mp: skill.mpCost,
+      hp: combat.monsterHp,
+      max: combat.monsterMaxHp,
+    }),
   )
 
   if (combat.monsterHp <= 0) {
@@ -103,7 +131,7 @@ export function playerSkill(
 
 export function playerDefend(player: PlayerState, combat: CombatState): CombatResult {
   combat.playerDefending = true
-  const messages = ['defend: incoming damage halved this turn']
+  const messages = [t('combat.defend')]
   return enemyTurn(player, combat, messages)
 }
 
@@ -114,7 +142,7 @@ export function playerUseItem(
 ): CombatResult {
   const result = useConsumable(player, itemId)
   if (isErrorMsg(result)) {
-    return { messages: [result ?? 'error: use failed'], ended: false }
+    return { messages: [result ?? t('combat.errUse')], ended: false }
   }
   combat.playerDefending = false
   return enemyTurn(player, combat, [result!])
@@ -125,12 +153,12 @@ export function playerFlee(player: PlayerState, combat: CombatState): CombatResu
   const chance = Math.max(0.25, 0.55 - (m.level - player.level) * 0.08)
   if (Math.random() < chance) {
     return {
-      messages: ['flee: success'],
+      messages: [t('combat.fleeOk')],
       ended: true,
       fled: true,
     }
   }
-  const messages = ['flee: failed']
+  const messages = [t('combat.fleeFail')]
   combat.playerDefending = false
   return enemyTurn(player, combat, messages)
 }
@@ -142,24 +170,25 @@ function enemyTurn(
 ): CombatResult {
   const m = MONSTERS[combat.monsterId]
   let dmg = calcDamage(m.atk, getTotalDef(player))
+  const name = monsterLabel(combat.monsterId)
   if (combat.playerDefending) {
     dmg = Math.max(1, Math.floor(dmg * 0.5))
-    messages.push(`(guard) ${m.name} hits for ${dmg}`)
+    messages.push(t('combat.hitGuard', { name, dmg }))
   } else {
-    messages.push(`${m.name} hits for ${dmg}`)
+    messages.push(t('combat.hit', { name, dmg }))
   }
   combat.playerDefending = false
   player.hp = Math.max(0, player.hp - dmg)
-  messages.push(`your HP ${player.hp}/${getEffectiveMaxHp(player)}`)
+  messages.push(t('combat.yourHp', { hp: player.hp, max: getEffectiveMaxHp(player) }))
 
   if (player.hp <= 0) {
-    messages.push('you were defeated... respawning in town (lost 20% gold)')
+    messages.push(t('combat.dead'))
     const loss = Math.floor(player.gold * 0.2)
     player.gold -= loss
     player.hp = Math.max(1, Math.floor(getEffectiveMaxHp(player) * 0.5))
     player.mp = Math.floor(player.mp * 0.5)
     player.location = 'town'
-    messages.push(`gold -${loss}G -> ${player.gold}G | cd ~/town`)
+    messages.push(t('combat.deadGold', { loss, gold: player.gold }))
     return { messages, ended: true, victory: false }
   }
 
@@ -172,18 +201,17 @@ function finishVictory(
   messages: string[],
 ): CombatResult {
   const m = MONSTERS[combat.monsterId]
-  messages.push(`${m.name} defeated`)
+  messages.push(t('combat.win', { name: monsterLabel(combat.monsterId) }))
 
   const gold = randInt(m.goldMin, m.goldMax)
   player.gold += gold
   player.exp += m.exp
-  messages.push(`+${m.exp} EXP | +${gold}G`)
+  messages.push(t('combat.reward', { exp: m.exp, gold }))
 
   if (Math.random() < m.dropChance && m.dropIds.length) {
     const dropId = m.dropIds[Math.floor(Math.random() * m.dropIds.length)]
     addItem(player, dropId, 1)
-    const item = getItem(dropId)
-    messages.push(`loot: ${item?.name ?? dropId}`)
+    messages.push(t('combat.drop', { item: itemLabel(dropId) }))
   }
 
   const levelLogs = applyLevelUps(player)
@@ -193,25 +221,20 @@ function finishVictory(
 }
 
 export function resolveSkillQuery(query: string, player: PlayerState): string | null {
-  const q = query.trim().toLowerCase()
   for (const id of player.skills) {
-    const s = SKILLS[id]
-    if (s.id === q || s.name.toLowerCase() === q || s.name === query.trim()) return id
+    if (skillMatchesQuery(id, query)) return id
   }
   for (const s of Object.values(SKILLS)) {
-    if (s.id === q || s.name.toLowerCase() === q || s.name === query.trim()) return s.id
+    if (skillMatchesQuery(s.id, query)) return s.id
   }
   return null
 }
 
 export function findConsumableId(player: PlayerState, query: string): string | null {
-  const q = query.trim().toLowerCase()
   for (const e of player.inventory) {
     const item = getItem(e.itemId)
     if (!item || item.kind !== 'consumable') continue
-    if (item.id === q || item.name.toLowerCase() === q || item.name === query.trim()) {
-      return item.id
-    }
+    if (itemMatchesQuery(item, query)) return item.id
   }
   return null
 }

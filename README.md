@@ -115,6 +115,7 @@ CLI에 `help`를 입력해도 동일한 목록을 볼 수 있습니다.
 | `autosave` | — | 현재 자동저장 간격 확인 | `autosave` |
 | `autosave <min>` | — | 자동저장 간격 변경 (**1~60분**) | `autosave 10` |
 | `theme <mode>` | — | 테마 변경 (`dark` / `light`) | `theme light` |
+| `lang <en\|ko>` | `language`, `locale` | UI·메시지 언어 변경 (**명령어는 영어 유지**) | `lang ko` |
 | `fontsize <n>` | — | 터미널 글자 크기 (11–18) | `fontsize 14` |
 | `settings` | `preferences`, `config` | 설정 UI 열기 (선택 사항) | `settings` |
 | `clear` | `cls` | CLI 화면 지우기 | `clear` |
@@ -131,6 +132,7 @@ CLI에 `help`를 입력해도 동일한 목록을 볼 수 있습니다.
 | 명령 | 설명 | 예시 |
 |------|------|------|
 | `theme dark\|light` | 다크/라이트 모드 | `theme light` |
+| `lang en\|ko` | 한국어/영어 메시지·UI (명령어는 영어) | `lang ko` |
 | `autosave [1-60]` | 자동저장 간격(분) 확인/변경 | `autosave 10` |
 | `fontsize [11-18]` | 터미널 폰트 크기 | `fontsize 14` |
 | `inspector on\|off` | 우측 Inspector 표시 | `inspector off` |
@@ -153,6 +155,18 @@ CLI에 `help`를 입력해도 동일한 목록을 볼 수 있습니다.
 설정 화면이 열려 있어도 **아래 CLI 입력창은 그대로** 쓸 수 있습니다.
 
 설정 저장 키: `nan-2026-rpg-settings`
+
+### 언어 (한국어 / 영어)
+
+메시지·UI·아이템/몬스터 **표시 이름**만 바뀌고, **명령어는 항상 영어**입니다 (`go`, `hunt`, `buy` 등).
+
+| 방법 | 예시 |
+|------|------|
+| CLI | `lang ko` / `lang en` |
+| 설정 UI | Appearance → Language |
+| 영문 아이템 명령 | `buy hp-potion-s` (한국어 UI에서도 동일) |
+
+기본값은 영어(`en`)이며, 선택한 언어는 설정에 함께 저장됩니다.
 
 ### 저장 / 자동저장
 

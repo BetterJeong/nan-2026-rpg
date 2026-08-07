@@ -28,7 +28,16 @@ import {
   type SettingsCategory,
 } from './game/settings'
 import { getTotalAtk, getTotalDef, getEffectiveMaxHp, getEffectiveMaxMp } from './game/player'
-import { SLOT_LABELS, SLOT_ORDER } from './game/types'
+import {
+  itemLabel,
+  monsterLabel,
+  skillLabel,
+  slotLabel,
+  t,
+  zoneDesc,
+  zoneLabel,
+} from './game/i18n'
+import { SLOT_ORDER } from './game/types'
 import type { GameState } from './game/types'
 
 let state: GameState = createInitialState()
@@ -77,7 +86,7 @@ function renderShell(): void {
           <span class="cli-prompt" id="prompt">player@town:~$</span>
           <input class="cli-input" id="cli" type="text" enterkeyhint="send"
             autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false"
-            placeholder="type help to see commands" />
+            placeholder="" />
         </div>
       </main>
       <aside class="inspector" id="inspector"></aside>
@@ -87,6 +96,7 @@ function renderShell(): void {
         <span>⎇ main*</span>
         <span id="sb-loc">town</span>
         <span id="sb-theme">theme: dark</span>
+        <span id="sb-lang">lang: en</span>
       </div>
       <div class="statusbar-right">
         <span>UTF-8</span>
@@ -238,8 +248,10 @@ function refresh(): void {
   if (sb) sb.textContent = getHud(state).location
   const themeEl = document.querySelector('#sb-theme')
   if (themeEl) themeEl.textContent = `theme: ${getSettings().theme}`
+  const langEl = document.querySelector('#sb-lang')
+  if (langEl) langEl.textContent = `lang: ${getSettings().locale}`
   const viewEl = document.querySelector('#sb-view')
-  if (viewEl) viewEl.textContent = view === 'settings' ? 'Settings' : 'Terminal'
+  if (viewEl) viewEl.textContent = view === 'settings' ? t('ui.settings') : 'Terminal'
   const title = document.querySelector('#titlebar-title')
   if (title) {
     title.textContent =
@@ -247,6 +259,8 @@ function refresh(): void {
         ? 'DevQuest — settings.json'
         : 'DevQuest — nan-2026-rpg — terminal.rpg'
   }
+  const cli = document.querySelector<HTMLInputElement>('#cli')
+  if (cli) cli.placeholder = t('ui.placeholder')
 }
 
 function renderActivity(): void {
@@ -312,25 +326,25 @@ function renderExplorer(): void {
   if (getUiView() === 'settings') {
     const cat = getSettingsCategory()
     explorer.innerHTML = `
-      <div class="panel-header">Settings</div>
+      <div class="panel-header">${t('ui.settings')}</div>
       <div class="explorer-section">
-        <div class="explorer-section-title">CATEGORIES</div>
+        <div class="explorer-section-title">${t('ui.categories')}</div>
         <div class="tree-item ${cat === 'appearance' ? 'active' : ''}" data-settings-cat="appearance">
-          <span class="icon">🎨</span>Appearance
+          <span class="icon">🎨</span>${t('ui.appearance')}
         </div>
         <div class="tree-item ${cat === 'game' ? 'active' : ''}" data-settings-cat="game">
-          <span class="icon">🎮</span>Game
+          <span class="icon">🎮</span>${t('ui.game')}
         </div>
         <div class="tree-item ${cat === 'terminal' ? 'active' : ''}" data-settings-cat="terminal">
-          <span class="icon">⌨️</span>Terminal
+          <span class="icon">⌨️</span>${t('ui.terminal')}
         </div>
       </div>
       <div class="explorer-section">
-        <div class="explorer-section-title">ACTIONS</div>
-        <div class="tree-item" data-cmd="settings close"><span class="icon">↩️</span>Back to Terminal</div>
-        <div class="tree-item" data-cmd="settings reset"><span class="icon">↺</span>Reset Defaults</div>
+        <div class="explorer-section-title">${t('ui.actions')}</div>
+        <div class="tree-item" data-cmd="settings close"><span class="icon">↩️</span>${t('ui.backTerminal')}</div>
+        <div class="tree-item" data-cmd="settings reset"><span class="icon">↺</span>${t('ui.resetDefaults')}</div>
       </div>
-      <p class="tree-hint">Or type: settings | theme dark | autosave 10</p>
+      <p class="tree-hint">${t('ui.hintSettings')}</p>
     `
     return
   }
@@ -341,28 +355,29 @@ function renderExplorer(): void {
     .map((z) => {
       const locked = p.level < z.minLevel
       const active = loc === z.id
+      const name = zoneLabel(z.id)
       return `<div class="tree-item ${locked ? 'locked' : ''} ${active ? 'active' : ''}"
-        data-cmd="${locked ? '' : `go ${z.name}`}" title="${z.description}">
-        <span class="icon">🌲</span>${z.name}
+        data-cmd="${locked ? '' : `go ${z.id}`}" title="${escapeAttr(zoneDesc(z.id))}">
+        <span class="icon">🌲</span>${escapeHtml(name)}
         ${locked ? `<span style="margin-left:auto;font-size:10px;color:#888">Lv.${z.minLevel}</span>` : ''}
       </div>`
     })
     .join('')
 
   explorer.innerHTML = `
-    <div class="panel-header">Explorer</div>
+    <div class="panel-header">${t('ui.explorer')}</div>
     <div class="explorer-section">
-      <div class="explorer-section-title">WORLD</div>
+      <div class="explorer-section-title">${t('ui.world')}</div>
       <div class="tree-item ${loc === 'town' || loc === 'shop' ? 'active' : ''}" data-cmd="town">
-        <span class="icon">🏠</span>town
+        <span class="icon">🏠</span>${t('ui.town')}
       </div>
       <div class="tree-item ${loc === 'shop' ? 'active' : ''}" data-cmd="shop">
-        <span class="icon">🛒</span>shop
+        <span class="icon">🛒</span>${t('ui.shop')}
       </div>
       ${zonesHtml}
     </div>
     <div class="explorer-section">
-      <div class="explorer-section-title">QUICK</div>
+      <div class="explorer-section-title">${t('ui.quick')}</div>
       <div class="tree-item" data-cmd="status"><span class="icon">📊</span>status</div>
       <div class="tree-item" data-cmd="inv"><span class="icon">🎒</span>inventory</div>
       <div class="tree-item" data-cmd="hunt"><span class="icon">⚔️</span>hunt</div>
@@ -370,7 +385,7 @@ function renderExplorer(): void {
       <div class="tree-item" data-cmd="save"><span class="icon">💾</span>save</div>
       <div class="tree-item" data-cmd="settings"><span class="icon">⚙️</span>settings</div>
     </div>
-    <p class="tree-hint">Click a node or type a command in the CLI.</p>
+    <p class="tree-hint">${t('ui.hintExplorer')}</p>
   `
 }
 
@@ -383,43 +398,54 @@ function renderSettings(): void {
   root.innerHTML = `
     <div class="settings-toolbar">
       <input class="settings-search" id="settings-search" type="search"
-        placeholder="Search settings" value="${escapeAttr(settingsQuery)}" />
-      <button type="button" class="tab" id="settings-close-btn" style="height:28px;border-top:none">Close</button>
+        placeholder="${escapeAttr(t('ui.searchSettings'))}" value="${escapeAttr(settingsQuery)}" />
+      <button type="button" class="tab" id="settings-close-btn" style="height:28px;border-top:none">${t('ui.close')}</button>
     </div>
     <div class="settings-cats" id="settings-cats">
-      <button type="button" class="settings-cat ${cat === 'appearance' ? 'active' : ''}" data-settings-cat="appearance">Appearance</button>
-      <button type="button" class="settings-cat ${cat === 'game' ? 'active' : ''}" data-settings-cat="game">Game</button>
-      <button type="button" class="settings-cat ${cat === 'terminal' ? 'active' : ''}" data-settings-cat="terminal">Terminal</button>
+      <button type="button" class="settings-cat ${cat === 'appearance' ? 'active' : ''}" data-settings-cat="appearance">${t('ui.appearance')}</button>
+      <button type="button" class="settings-cat ${cat === 'game' ? 'active' : ''}" data-settings-cat="game">${t('ui.game')}</button>
+      <button type="button" class="settings-cat ${cat === 'terminal' ? 'active' : ''}" data-settings-cat="terminal">${t('ui.terminal')}</button>
     </div>
     <div class="settings-body" id="settings-body">
       ${renderSettingsSection(
         'appearance',
-        'Appearance',
-        'Color theme and layout chrome',
+        t('ui.appearance'),
+        t('ui.appearanceDesc'),
         cat,
         showAll,
         [
           settingSelect(
-            'Color Theme',
-            'Dark / Light mode for the whole IDE UI',
+            t('ui.colorTheme'),
+            t('ui.colorThemeDesc'),
             'theme',
             'theme',
             s.theme,
             [
-              ['dark', 'Dark+ (default)'],
-              ['light', 'Light+'],
+              ['dark', t('ui.dark')],
+              ['light', t('ui.light')],
+            ],
+          ),
+          settingSelect(
+            t('ui.language'),
+            t('ui.languageDesc'),
+            'lang',
+            'locale',
+            s.locale,
+            [
+              ['en', t('ui.langEn')],
+              ['ko', t('ui.langKo')],
             ],
           ),
           settingToggle(
-            'Show Inspector',
-            'Right-side inspector panel',
+            t('ui.showInspector'),
+            t('ui.showInspectorDesc'),
             'inspector on|off',
             'showInspector',
             s.showInspector,
           ),
           settingToggle(
-            'Compact Explorer',
-            'Narrower left sidebar, hide hints',
+            t('ui.compactExplorer'),
+            t('ui.compactExplorerDesc'),
             'explorer compact|normal',
             'compactExplorer',
             s.compactExplorer,
@@ -428,14 +454,14 @@ function renderSettings(): void {
       )}
       ${renderSettingsSection(
         'game',
-        'Game',
-        'Gameplay environment options',
+        t('ui.game'),
+        t('ui.gameDesc'),
         cat,
         showAll,
         [
           settingNumber(
-            'Autosave Interval',
-            `Auto-save to localStorage every N minutes (${MIN_AUTOSAVE_MIN}-${MAX_AUTOSAVE_MIN})`,
+            t('ui.autosave'),
+            t('ui.autosaveDesc'),
             'autosave',
             'autosaveMinutes',
             s.autosaveMinutes,
@@ -443,15 +469,15 @@ function renderSettings(): void {
             MAX_AUTOSAVE_MIN,
           ),
           settingToggle(
-            'Show HUD',
-            'Top status strip (HP / MP / EXP)',
+            t('ui.showHud'),
+            t('ui.showHudDesc'),
             'hud on|off',
             'showHud',
             s.showHud,
           ),
           settingToggle(
-            'Combat Hints',
-            'Print combat command hints when a battle starts',
+            t('ui.combatHints'),
+            t('ui.combatHintsDesc'),
             'hints on|off',
             'combatHints',
             s.combatHints,
@@ -460,14 +486,14 @@ function renderSettings(): void {
       )}
       ${renderSettingsSection(
         'terminal',
-        'Terminal',
-        'CLI appearance',
+        t('ui.terminal'),
+        t('ui.terminalDesc'),
         cat,
         showAll,
         [
           settingNumber(
-            'Font Size',
-            `Terminal and prompt font size (${FONT_SIZE_MIN}-${FONT_SIZE_MAX}px)`,
+            t('ui.fontSize'),
+            t('ui.fontSizeDesc'),
             'fontsize',
             'fontSize',
             s.fontSize,
@@ -477,8 +503,8 @@ function renderSettings(): void {
         ],
       )}
       <div class="settings-actions">
-        <button type="button" class="primary" id="btn-settings-close">Back to Terminal</button>
-        <button type="button" id="btn-settings-reset">Reset to Defaults</button>
+        <button type="button" class="primary" id="btn-settings-close">${t('ui.backTerminal')}</button>
+        <button type="button" id="btn-settings-reset">${t('ui.resetDefaults')}</button>
       </div>
     </div>
   `
@@ -486,7 +512,6 @@ function renderSettings(): void {
   const search = document.querySelector<HTMLInputElement>('#settings-search')!
   search.addEventListener('input', () => {
     settingsQuery = search.value
-    // re-render so category filtering updates when clearing search
     refresh()
     document.querySelector<HTMLInputElement>('#settings-search')?.focus()
   })
@@ -505,7 +530,7 @@ function renderSettings(): void {
   root.querySelector('#btn-settings-reset')?.addEventListener('click', () => {
     resetSettings()
     restartAutosaveTimer()
-    pushMessage(state, 'system', 'settings reset to defaults')
+    pushMessage(state, 'system', t('ok.settingsReset'))
     refresh()
   })
 
@@ -513,6 +538,8 @@ function renderSettings(): void {
     el.addEventListener('change', () => {
       if (el.dataset.key === 'theme') {
         applyPatch({ theme: el.value === 'light' ? 'light' : 'dark' })
+      } else if (el.dataset.key === 'locale') {
+        applyPatch({ locale: el.value === 'ko' ? 'ko' : 'en' })
       }
     })
   })
@@ -652,8 +679,8 @@ function renderInspector(): void {
   const equipLines = SLOT_ORDER.map((slot) => {
     const id = p.equipment[slot]
     const item = id ? getItem(id) : undefined
-    return `<div>${SLOT_LABELS[slot]}: ${
-      item ? escapeHtml(item.name) : '<span class="empty">—</span>'
+    return `<div>${slotLabel(slot)}: ${
+      item ? escapeHtml(itemLabel(item)) : '<span class="empty">—</span>'
     }</div>`
   }).join('')
 
@@ -663,9 +690,9 @@ function renderInspector(): void {
     const pct = (state.combat.monsterHp / state.combat.monsterMaxHp) * 100
     combatBlock = `
       <div class="insp-group">
-        <h3>Combat Target</h3>
+        <h3>${t('ui.combatTarget')}</h3>
         <div class="insp-monster">
-          <div><strong>${escapeHtml(m.name)}</strong> Lv.${m.level}</div>
+          <div><strong>${escapeHtml(monsterLabel(state.combat.monsterId))}</strong> Lv.${m.level}</div>
           <div>HP ${state.combat.monsterHp}/${state.combat.monsterMaxHp}</div>
           <div class="insp-bar"><i style="width:${pct}%"></i></div>
           <div style="margin-top:6px;color:var(--fg-dim)">ATK ${m.atk} / DEF ${m.def}</div>
@@ -676,16 +703,16 @@ function renderInspector(): void {
   const skillLines = p.skills
     .map((id) => {
       const sk = SKILLS[id]
-      return `<div class="insp-row"><span class="k">${escapeHtml(sk.name)}</span><span class="v">MP ${sk.mpCost}</span></div>`
+      return `<div class="insp-row"><span class="k">${escapeHtml(skillLabel(id))}</span><span class="v">MP ${sk.mpCost}</span></div>`
     })
     .join('')
 
   const s = getSettings()
   document.querySelector('#inspector')!.innerHTML = `
-    <div class="panel-header">Inspector</div>
+    <div class="panel-header">${t('ui.inspector')}</div>
     <div class="inspector-body">
       <div class="insp-group">
-        <h3>Player</h3>
+        <h3>${t('ui.player')}</h3>
         <div class="insp-row"><span class="k">Name</span><span class="v">${escapeHtml(p.name)}</span></div>
         <div class="insp-row"><span class="k">Level</span><span class="v">${p.level}</span></div>
         <div class="insp-row"><span class="k">HP</span><span class="v">${p.hp}/${getEffectiveMaxHp(p)}</span></div>
@@ -696,34 +723,34 @@ function renderInspector(): void {
       </div>
       ${combatBlock}
       <div class="insp-group">
-        <h3>Environment</h3>
+        <h3>${t('ui.environment')}</h3>
         <div class="insp-row"><span class="k">Theme</span><span class="v">${s.theme}</span></div>
+        <div class="insp-row"><span class="k">Lang</span><span class="v">${s.locale}</span></div>
         <div class="insp-row"><span class="k">Autosave</span><span class="v">${s.autosaveMinutes}m</span></div>
         <div class="insp-row"><span class="k">Font</span><span class="v">${s.fontSize}px</span></div>
       </div>
       <div class="insp-group">
-        <h3>Equipment</h3>
+        <h3>${t('ui.equipment')}</h3>
         <div class="insp-equip">${equipLines}</div>
       </div>
       <div class="insp-group">
-        <h3>Skills</h3>
+        <h3>${t('ui.skills')}</h3>
         ${skillLines}
       </div>
       <div class="insp-group">
-        <h3>Inventory</h3>
+        <h3>${t('ui.inventory')}</h3>
         ${
           p.inventory.length
             ? p.inventory
                 .slice(0, 12)
                 .map((e) => {
-                  const item = getItem(e.itemId)
-                  return `<div class="insp-row"><span class="k">${escapeHtml(item?.name ?? e.itemId)}</span><span class="v">x${e.qty}</span></div>`
+                  return `<div class="insp-row"><span class="k">${escapeHtml(itemLabel(e.itemId))}</span><span class="v">x${e.qty}</span></div>`
                 })
                 .join('') +
               (p.inventory.length > 12
                 ? `<div class="insp-row"><span class="k">…</span><span class="v">+${p.inventory.length - 12}</span></div>`
                 : '')
-            : '<div class="insp-row"><span class="k">(empty)</span></div>'
+            : `<div class="insp-row"><span class="k">${t('ui.empty')}</span></div>`
         }
       </div>
     </div>
@@ -824,7 +851,11 @@ try {
   pushMessage(
     state,
     'system',
-    `autosave every ${getAutosaveMinutes()} min · theme ${getSettings().theme} · open settings: settings`,
+    t('boot.autosave', {
+      min: getAutosaveMinutes(),
+      theme: getSettings().theme,
+      lang: getSettings().locale,
+    }),
   )
   refresh()
   // Don't autofocus on mobile — opening keyboard on load covers the UI

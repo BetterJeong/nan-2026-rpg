@@ -1,5 +1,6 @@
 import type { GameState, TerminalLine } from './types'
 import { createNewPlayer } from './player'
+import { t } from './i18n'
 
 const SAVE_KEY = 'nan-2026-rpg-save'
 const AUTOSAVE_KEY = 'nan-2026-rpg-autosave-min'
@@ -38,7 +39,7 @@ export function saveGame(state: GameState): string {
     payload.mode = 'idle'
   }
   localStorage.setItem(SAVE_KEY, JSON.stringify(payload))
-  return 'game saved. (localStorage)'
+  return t('ok.saved')
 }
 
 export function loadGame(): GameState | null {
