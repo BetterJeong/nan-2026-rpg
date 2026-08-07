@@ -1,5 +1,5 @@
 import './style.css'
-import { ZONES, MONSTERS, SKILLS } from './game/data/content'
+import { ZONES, MONSTERS, SKILLS, hasDefeatedBoss, requiredBossForZone, getBossForZone } from './game/data/content'
 import { getItem } from './game/data/items'
 import { handleCommand, welcome, getHud } from './game/commands'
 import { getSuggestChips } from './game/suggest'
@@ -37,7 +37,9 @@ import {
 } from './game/settings'
 import { getTotalAtk, getTotalDef, getEffectiveMaxHp, getEffectiveMaxMp } from './game/player'
 import {
+  goCmd,
   itemLabel,
+  lookaroundCmd,
   monsterLabel,
   skillLabel,
   slotLabel,
@@ -469,16 +471,48 @@ function renderExplorer(): void {
 
   const p = state.player
   const loc = p.location
-  const zonesHtml = Object.values(ZONES)
-    .map((z) => {
-      const locked = p.level < z.minLevel
-      const active = loc === z.id
-      const name = zoneLabel(z.id)
-      return `<div class="tree-item ${locked ? 'locked' : ''} ${active ? 'active' : ''}"
-        data-cmd="${locked ? '' : `go ${z.id}`}" title="${escapeAttr(zoneDesc(z.id))}">
-        <span class="icon">🌲</span>${escapeHtml(name)}
-        ${locked ? `<span style="margin-left:auto;font-size:10px;color:#888">Lv.${z.minLevel}</span>` : ''}
-      </div>`
+  const regionMeta: Array<{
+    id: 'forest' | 'sea' | 'mountain'
+    titleKey: string
+    icon: string
+  }> = [
+    { id: 'forest', titleKey: 'ui.regionForest', icon: '🌲' },
+    { id: 'sea', titleKey: 'ui.regionSea', icon: '🌊' },
+    { id: 'mountain', titleKey: 'ui.regionMountain', icon: '⛰' },
+  ]
+  const zonesByRegion = regionMeta
+    .map((region) => {
+      const rows = Object.values(ZONES)
+        .filter((z) => z.region === region.id)
+        .map((z) => {
+          const needBoss = requiredBossForZone(z)
+          const bossLocked =
+            !!needBoss && !hasDefeatedBoss(p.bossesDefeated ?? [], needBoss)
+          const locked = p.level < z.minLevel || bossLocked
+          const active = loc === z.id
+          const name = zoneLabel(z.id)
+          const bossId = getBossForZone(z.id)
+          const bossMark =
+            bossId && hasDefeatedBoss(p.bossesDefeated ?? [], bossId)
+              ? '<span style="margin-left:auto;font-size:10px;color:#6a9955">★</span>'
+              : bossId && !locked
+                ? '<span style="margin-left:auto;font-size:10px;color:#ce9178">BOSS</span>'
+                : ''
+          const lockLabel = bossLocked
+            ? `<span style="margin-left:auto;font-size:10px;color:#888">BOSS</span>`
+            : locked
+              ? `<span style="margin-left:auto;font-size:10px;color:#888">Lv.${z.minLevel}</span>`
+              : bossMark
+          return `<div class="tree-item ${locked ? 'locked' : ''} ${active ? 'active' : ''}"
+            data-cmd="${locked ? '' : goCmd(z.id)}" title="${escapeAttr(zoneDesc(z.id))}">
+            <span class="icon">${region.icon}</span>${escapeHtml(name)}
+            ${lockLabel}
+          </div>`
+        })
+        .join('')
+      return `
+        <div class="explorer-section-title">${t(region.titleKey)}</div>
+        ${rows}`
     })
     .join('')
 
@@ -492,16 +526,26 @@ function renderExplorer(): void {
       <div class="tree-item ${loc === 'shop' ? 'active' : ''}" data-cmd="shop">
         <span class="icon">🛒</span>${t('ui.shop')}
       </div>
-      ${zonesHtml}
+      ${
+        loc === 'town' || loc === 'shop'
+          ? `<div class="tree-item" data-cmd="${lookaroundCmd()}"><span class="icon">👀</span>${t('ui.lookaround')}</div>`
+          : ''
+      }
+      ${zonesByRegion}
     </div>
     <div class="explorer-section">
       <div class="explorer-section-title">${t('ui.quick')}</div>
-      <div class="tree-item" data-cmd="status"><span class="icon">📊</span>status</div>
-      <div class="tree-item" data-cmd="inv"><span class="icon">🎒</span>inventory</div>
-      <div class="tree-item" data-cmd="hunt"><span class="icon">⚔️</span>hunt</div>
-      <div class="tree-item" data-cmd="help"><span class="icon">❓</span>help</div>
-      <div class="tree-item" data-cmd="save"><span class="icon">💾</span>save</div>
-      <div class="tree-item" data-cmd="settings"><span class="icon">⚙️</span>settings</div>
+      <div class="tree-item" data-cmd="status"><span class="icon">📊</span>${t('ui.status')}</div>
+      <div class="tree-item" data-cmd="inv"><span class="icon">🎒</span>${t('ui.inventory')}</div>
+      <div class="tree-item" data-cmd="hunt"><span class="icon">⚔️</span>${t('ui.hunt')}</div>
+      ${
+        getBossForZone(loc)
+          ? `<div class="tree-item" data-cmd="boss"><span class="icon">👑</span>${t('ui.boss')}</div>`
+          : ''
+      }
+      <div class="tree-item" data-cmd="help"><span class="icon">❓</span>${t('ui.help')}</div>
+      <div class="tree-item" data-cmd="save"><span class="icon">💾</span>${t('ui.save')}</div>
+      <div class="tree-item" data-cmd="settings"><span class="icon">⚙️</span>${t('ui.settings')}</div>
     </div>
     <p class="tree-hint">${t('ui.hintExplorer')}</p>
   `
@@ -885,15 +929,15 @@ function renderInspector(): void {
 }
 
 function updatePrompt(): void {
-  const h = getHud(state)
+  const loc = state.player.location
   const path =
     state.mode === 'combat'
       ? 'combat'
-      : h.location === 'town'
+      : loc === 'town'
         ? '~'
-        : h.location === 'shop'
+        : loc === 'shop'
           ? '~/shop'
-          : `~/zones/${h.location}`
+          : `~/zones/${loc}`
   const el = document.querySelector('#prompt')
   if (el) el.textContent = `player@${path}$`
 }

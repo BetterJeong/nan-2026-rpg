@@ -53,6 +53,8 @@ export type SkillDef = {
   heal?: number
   description: string
   unlockLevel: number
+  /** Boss-only skill — not shown in player skill list */
+  hidden?: boolean
 }
 
 export type MonsterDef = {
@@ -67,6 +69,9 @@ export type MonsterDef = {
   goldMax: number
   dropIds: string[]
   dropChance: number
+  isBoss?: boolean
+  /** Skill ids the boss may cast on its turn */
+  skills?: string[]
 }
 
 export type ZoneDef = {
@@ -74,11 +79,13 @@ export type ZoneDef = {
   name: string
   minLevel: number
   description: string
+  /** Biome group for Explorer */
+  region: 'forest' | 'sea' | 'mountain'
   monsters: string[]
   forageItems: string[]
   goldMin: number
   goldMax: number
-  /** Extra aliases (e.g. Korean names) */
+  /** Extra aliases (e.g. Korean names, legacy ids) */
   aliases?: string[]
 }
 
@@ -110,6 +117,30 @@ export type PlayerState = {
   equipment: Equipment
   location: Location
   skills: string[]
+  /** Boss monster ids defeated at least once (gates + rechallenge) */
+  bossesDefeated: string[]
+  /** Affinity points per NPC id */
+  npcAffinity: Record<string, number>
+  /** Highest gift stage claimed per NPC (0–3) */
+  npcGiftStage: Record<string, number>
+  /** Dialogue ids already used (prefer unseen) */
+  npcDialogueSeen: Record<string, string[]>
+}
+
+export type TownSocialState = {
+  /** NPC ids currently in town after lookaround */
+  present: string[]
+  /** One conversation allowed per lookaround */
+  talked: boolean
+  /** Waiting for reply 1/2/3 */
+  pending: null | {
+    npcId: string
+    dialogueId: string
+    /** 1 = first beat, 2 = follow-up beat */
+    beat: 1 | 2
+    /** Shuffled original indices for displayed options 1/2/3 */
+    choiceOrder: number[]
+  }
 }
 
 export type GameMode = 'idle' | 'combat' | 'dead'
@@ -118,6 +149,7 @@ export type GameState = {
   player: PlayerState
   mode: GameMode
   combat: CombatState | null
+  townSocial: TownSocialState | null
   history: string[]
   messages: TerminalLine[]
 }

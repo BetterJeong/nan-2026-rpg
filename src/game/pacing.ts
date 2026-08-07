@@ -70,6 +70,7 @@ export function classifyCommand(raw: string): PaceKind {
     return 'quick'
   }
   if (cmd === 'hunt' || cmd === 'explore' || cmd === 'search') return 'search'
+  if (cmd === 'boss' || cmd === 'challenge') return 'search'
   if (
     cmd === 'attack' ||
     cmd === 'a' ||
@@ -86,8 +87,7 @@ export function classifyCommand(raw: string): PaceKind {
   ) {
     return 'combat'
   }
-  if (
-    cmd === 'go' ||
+  if (cmd === 'go' ||
     cmd === 'goto' ||
     cmd === 'move' ||
     cmd === 'cd' ||
@@ -101,7 +101,19 @@ export function classifyCommand(raw: string): PaceKind {
     cmd === 'sell' ||
     cmd === 'equip' ||
     cmd === 'unequip' ||
-    cmd === 'use'
+    cmd === 'use' ||
+    cmd === 'talk' ||
+    cmd === 'npc' ||
+    cmd === 'speak' ||
+    cmd === 'npcs' ||
+    cmd === 'lookaround' ||
+    cmd === 'around' ||
+    cmd === '둘러보기' ||
+    cmd === 'people' ||
+    cmd === 'reply' ||
+    cmd === 'answer' ||
+    cmd === 'choose' ||
+    cmd === '선택'
   ) {
     return 'action'
   }

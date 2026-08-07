@@ -35,13 +35,14 @@ function calcDamage(atk: number, def: number, variance = 0.15): number {
 
 export function startCombat(monsterId: string): CombatState {
   const m = MONSTERS[monsterId]
+  const appearKey = m.isBoss ? 'combat.appearBoss' : 'combat.appear'
   return {
     monsterId,
     monsterHp: m.hp,
     monsterMaxHp: m.hp,
     playerDefending: false,
     turn: 'player',
-    log: [t('combat.appear', { name: monsterLabel(monsterId), level: m.level })],
+    log: [t(appearKey, { name: monsterLabel(monsterId), level: m.level })],
   }
 }
 
@@ -153,7 +154,9 @@ export function playerUseItem(
 
 export function playerFlee(player: PlayerState, combat: CombatState): CombatResult {
   const m = MONSTERS[combat.monsterId]
-  const chance = Math.max(0.25, 0.55 - (m.level - player.level) * 0.08)
+  const chance = m.isBoss
+    ? 0.08
+    : Math.max(0.25, 0.55 - (m.level - player.level) * 0.08)
   if (Math.random() < chance) {
     return {
       messages: [t('combat.fleeOk')],
@@ -161,7 +164,7 @@ export function playerFlee(player: PlayerState, combat: CombatState): CombatResu
       fled: true,
     }
   }
-  const messages = [t('combat.fleeFail')]
+  const messages = [t(m.isBoss ? 'combat.fleeFailBoss' : 'combat.fleeFail')]
   combat.playerDefending = false
   return enemyTurn(player, combat, messages)
 }
@@ -172,8 +175,65 @@ function enemyTurn(
   messages: string[],
 ): CombatResult {
   const m = MONSTERS[combat.monsterId]
-  let dmg = calcDamage(m.atk, getTotalDef(player))
   const name = monsterLabel(combat.monsterId)
+
+  const useSkill =
+    m.isBoss &&
+    m.skills &&
+    m.skills.length > 0 &&
+    Math.random() < 0.4
+
+  if (useSkill) {
+    const skillId = m.skills![Math.floor(Math.random() * m.skills!.length)]
+    const skill = SKILLS[skillId]
+    if (skill?.heal) {
+      const before = combat.monsterHp
+      combat.monsterHp = Math.min(combat.monsterMaxHp, combat.monsterHp + skill.heal)
+      messages.push(
+        t('combat.bossHeal', {
+          name,
+          skill: skillLabel(skillId),
+          heal: combat.monsterHp - before,
+          hp: combat.monsterHp,
+          max: combat.monsterMaxHp,
+        }),
+      )
+      combat.playerDefending = false
+      return { messages, ended: false }
+    } else if (skill) {
+      const power = skill.power ?? 1
+      const bonus = skill.bonus ?? 0
+      const atk = Math.floor(m.atk * power) + bonus
+      let dmg = calcDamage(atk, getTotalDef(player), 0.12)
+      if (combat.playerDefending) {
+        dmg = Math.max(1, Math.floor(dmg * 0.5))
+        messages.push(
+          t('combat.bossSkillGuard', {
+            name,
+            skill: skillLabel(skillId),
+            dmg,
+          }),
+        )
+      } else {
+        messages.push(
+          t('combat.bossSkill', {
+            name,
+            skill: skillLabel(skillId),
+            dmg,
+          }),
+        )
+      }
+      player.hp = Math.max(0, player.hp - dmg)
+      messages.push(t('combat.yourHp', { hp: player.hp, max: getEffectiveMaxHp(player) }))
+      combat.playerDefending = false
+      if (player.hp <= 0) {
+        return finishDefeat(player, messages)
+      }
+      return { messages, ended: false }
+    }
+  }
+
+  let dmg = calcDamage(m.atk, getTotalDef(player))
   if (combat.playerDefending) {
     dmg = Math.max(1, Math.floor(dmg * 0.5))
     messages.push(t('combat.hitGuard', { name, dmg }))
@@ -185,24 +245,28 @@ function enemyTurn(
   messages.push(t('combat.yourHp', { hp: player.hp, max: getEffectiveMaxHp(player) }))
 
   if (player.hp <= 0) {
-    messages.push(t('combat.dead'))
-    const loss = Math.floor(player.gold * 0.2)
-    player.gold -= loss
-    setVitalsFraction(player, 0.5)
-    player.location = 'town'
-    messages.push(t('combat.deadGold', { loss, gold: player.gold }))
-    messages.push(
-      t('combat.deadVitals', {
-        hp: player.hp,
-        maxHp: getEffectiveMaxHp(player),
-        mp: player.mp,
-        maxMp: getEffectiveMaxMp(player),
-      }),
-    )
-    return { messages, ended: true, victory: false }
+    return finishDefeat(player, messages)
   }
 
   return { messages, ended: false }
+}
+
+function finishDefeat(player: PlayerState, messages: string[]): CombatResult {
+  messages.push(t('combat.dead'))
+  const loss = Math.floor(player.gold * 0.2)
+  player.gold -= loss
+  setVitalsFraction(player, 0.5)
+  player.location = 'town'
+  messages.push(t('combat.deadGold', { loss, gold: player.gold }))
+  messages.push(
+    t('combat.deadVitals', {
+      hp: player.hp,
+      maxHp: getEffectiveMaxHp(player),
+      mp: player.mp,
+      maxMp: getEffectiveMaxMp(player),
+    }),
+  )
+  return { messages, ended: true, victory: false }
 }
 
 function finishVictory(
@@ -224,11 +288,27 @@ function finishVictory(
     messages.push(t('combat.drop', { item: itemLabel(dropId) }))
   }
 
+  if (m.isBoss) {
+    if (!Array.isArray(player.bossesDefeated)) player.bossesDefeated = []
+    if (!player.bossesDefeated.includes(m.id)) {
+      player.bossesDefeated.push(m.id)
+      if (m.id === 'grove_guardian') {
+        messages.push(t('combat.bossUnlockSea'))
+      } else if (m.id === 'tide_leviathan') {
+        messages.push(t('combat.bossUnlockMountain'))
+      } else if (m.id === 'tyrant') {
+        messages.push(t('combat.bossClearPeak'))
+      }
+    } else {
+      messages.push(t('combat.bossRechallenge'))
+    }
+  }
+
   const levelLogs = applyLevelUps(player)
   messages.push(...levelLogs)
 
   // level-up already full-heals; only regen if still not full
-  const regen = regenFraction(player, 0.1)
+  const regen = regenFraction(player, 0.12)
   if (regen.hp > 0 || regen.mp > 0) {
     messages.push(
       t('combat.regen', {

@@ -1,6 +1,7 @@
 import type { GameState, TerminalLine } from './types'
 import { createNewPlayer } from './player'
 import { t } from './i18n'
+import { migrateLocationId } from './data/content'
 
 const SAVE_KEY = 'nan-2026-rpg-save'
 const AUTOSAVE_KEY = 'nan-2026-rpg-autosave-min'
@@ -14,6 +15,7 @@ export function createInitialState(): GameState {
     player: createNewPlayer(),
     mode: 'idle',
     combat: null,
+    townSocial: null,
     history: [],
     messages: [],
   }
@@ -52,8 +54,26 @@ export function loadGame(): GameState | null {
     }
     const state = createInitialState()
     state.player = data.player
+    state.player.location = migrateLocationId(state.player.location)
+    if (!Array.isArray(state.player.bossesDefeated)) {
+      state.player.bossesDefeated = []
+    } else {
+      state.player.bossesDefeated = state.player.bossesDefeated.map((id) =>
+        id === 'peak_tyrant' ? 'tyrant' : id,
+      )
+    }
+    if (!state.player.npcAffinity || typeof state.player.npcAffinity !== 'object') {
+      state.player.npcAffinity = {}
+    }
+    if (!state.player.npcGiftStage || typeof state.player.npcGiftStage !== 'object') {
+      state.player.npcGiftStage = {}
+    }
+    if (!state.player.npcDialogueSeen || typeof state.player.npcDialogueSeen !== 'object') {
+      state.player.npcDialogueSeen = {}
+    }
     state.mode = 'idle'
     state.combat = null
+    state.townSocial = null
     return state
   } catch {
     return null

@@ -23,7 +23,69 @@ export function createNewPlayer(name = 'player'): PlayerState {
     equipment: {},
     location: 'town',
     skills: ['slash'],
+    bossesDefeated: [],
+    npcAffinity: {},
+    npcGiftStage: {},
+    npcDialogueSeen: {},
   }
+}
+
+/** Hidden admin fixture — strong loadout, all region gates open. */
+export function createAdminTestPlayer(name = 'tester'): PlayerState {
+  const level = 19
+  const gained = level - 1
+  const player: PlayerState = {
+    name,
+    level,
+    exp: 0,
+    gold: 5000,
+    hp: 50 + gained * 10,
+    maxHp: 50 + gained * 10,
+    mp: 30 + gained * 5,
+    maxMp: 30 + gained * 5,
+    baseAtk: 5 + gained * 2,
+    baseDef: 5 + gained * 1,
+    inventory: [
+      { itemId: 'hp_potion_l', qty: 20 },
+      { itemId: 'mp_potion_l', qty: 20 },
+      { itemId: 'hp_potion_m', qty: 10 },
+      { itemId: 'mp_potion_m', qty: 10 },
+      { itemId: 'guardian_blade', qty: 1 },
+      { itemId: 'grove_mantle', qty: 1 },
+      { itemId: 'leviathan_fang', qty: 1 },
+      { itemId: 'abyss_mail', qty: 1 },
+      { itemId: 'tyrant_edge', qty: 1 },
+      { itemId: 'summit_aegis', qty: 1 },
+      { itemId: 'peak_helm', qty: 1 },
+      { itemId: 'granite_greaves', qty: 1 },
+      { itemId: 'frost_boots', qty: 1 },
+      { itemId: 'frost_gloves', qty: 1 },
+      { itemId: 'storm_ring', qty: 1 },
+      { itemId: 'peak_charm', qty: 1 },
+    ],
+    equipment: {
+      weapon: 'tyrant_edge',
+      armor: 'summit_aegis',
+      helmet: 'peak_helm',
+      legs: 'granite_greaves',
+      boots: 'frost_boots',
+      gloves: 'frost_gloves',
+      ring: 'storm_ring',
+      necklace: 'peak_charm',
+    },
+    location: 'town',
+    skills: Object.values(SKILLS)
+      .filter((s) => !s.hidden && s.unlockLevel <= level)
+      .map((s) => s.id),
+    bossesDefeated: ['grove_guardian', 'tide_leviathan'],
+    npcAffinity: {},
+    npcGiftStage: {},
+    npcDialogueSeen: {},
+  }
+  clampVitals(player)
+  player.hp = getEffectiveMaxHp(player)
+  player.mp = getEffectiveMaxMp(player)
+  return player
 }
 
 export function getEquipBonus(player: PlayerState): {
@@ -218,6 +280,7 @@ export function applyLevelUps(player: PlayerState): string[] {
     player.mp = getEffectiveMaxMp(player)
 
     for (const skill of Object.values(SKILLS)) {
+      if (skill.hidden) continue
       if (skill.unlockLevel === player.level && !player.skills.includes(skill.id)) {
         player.skills.push(skill.id)
         logs.push(t('player.skillUnlock', { skill: skillLabel(skill.id) }))

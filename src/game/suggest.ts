@@ -1,5 +1,7 @@
-import { ZONES } from './data/content'
+import { BOSS_BY_ZONE, getBossForZone, hasDefeatedBoss, requiredBossForZone, ZONES } from './data/content'
 import { getItem } from './data/items'
+import { NPCS, npcLabel } from './data/npcs'
+import { goCmd, lookaroundCmd } from './i18n'
 import type { GameState } from './types'
 import { getEffectiveMaxHp, getEffectiveMaxMp } from './player'
 import { getSettings, getUiView } from './settings'
@@ -69,7 +71,28 @@ function firstConsumableCmd(state: GameState): SuggestChip | null {
 
 function firstUnlockedZone(state: GameState): string | null {
   for (const z of Object.values(ZONES)) {
-    if (state.player.level >= z.minLevel) return z.id
+    if (state.player.level < z.minLevel) continue
+    const need = requiredBossForZone(z)
+    if (need && !hasDefeatedBoss(state.player.bossesDefeated, need)) continue
+    return z.id
+  }
+  return null
+}
+
+function nextRegionEntry(state: GameState): string | null {
+  const defeated = state.player.bossesDefeated
+  if (
+    hasDefeatedBoss(defeated, 'grove_guardian') &&
+    !hasDefeatedBoss(defeated, 'tide_leviathan') &&
+    state.player.level >= ZONES.saltshore.minLevel
+  ) {
+    return 'saltshore'
+  }
+  if (
+    hasDefeatedBoss(defeated, 'tide_leviathan') &&
+    state.player.level >= ZONES.foothill.minLevel
+  ) {
+    return 'foothill'
   }
   return null
 }
@@ -83,6 +106,24 @@ function pushUnique(chips: SuggestChip[], next: SuggestChip[]): SuggestChip[] {
     if (chips.length >= MAX_CHIPS) break
   }
   return chips
+}
+
+function goChip(zoneId: string): SuggestChip {
+  const cmd = goCmd(zoneId)
+  return { cmd, label: cmd }
+}
+
+function lookChip(): SuggestChip {
+  const cmd = lookaroundCmd()
+  return { cmd, label: cmd }
+}
+
+function talkChip(npcId: string): SuggestChip | null {
+  const n = NPCS[npcId]
+  if (!n) return null
+  const name = npcLabel(n)
+  const cmd = `talk ${name}`
+  return { cmd, label: cmd }
 }
 
 /** Contextual command chips for the input dock (mobile-friendly). */
@@ -133,9 +174,22 @@ export function getSuggestChips(state: GameState): SuggestChip[] {
 
   if (loc === 'town') {
     const zone = firstUnlockedZone(state)
-    if (zone) chips.push({ cmd: `go ${zone}`, label: `go ${zone}` })
+    if (state.townSocial?.pending) {
+      return prependLangPicker([
+        { cmd: '1', label: '1' },
+        { cmd: '2', label: '2' },
+        { cmd: '3', label: '3' },
+        { cmd: 'status', label: 'status' },
+      ])
+    }
+    if (zone) chips.push(goChip(zone))
+    chips.push(lookChip())
     chips.push({ cmd: 'shop', label: 'shop' })
     if (needsRest) chips.push({ cmd: 'rest', label: 'rest' })
+    if (state.townSocial && !state.townSocial.talked && state.townSocial.present.length) {
+      const talk = talkChip(state.townSocial.present[0])
+      if (talk) chips.push(talk)
+    }
     pushUnique(chips, gear)
     pushUnique(chips, [
       { cmd: 'status', label: 'status' },
@@ -145,9 +199,17 @@ export function getSuggestChips(state: GameState): SuggestChip[] {
     ])
     if (!needsRest) pushUnique(chips, [{ cmd: 'rest', label: 'rest' }])
   } else if (loc === 'shop') {
+    if (state.townSocial?.pending) {
+      return prependLangPicker([
+        { cmd: '1', label: '1' },
+        { cmd: '2', label: '2' },
+        { cmd: '3', label: '3' },
+      ])
+    }
     chips.push(
       { cmd: 'shop list', label: 'shop list' },
       { cmd: 'buy 1', label: 'buy 1' },
+      lookChip(),
       { cmd: 'town', label: 'town' },
     )
     pushUnique(chips, gear)
@@ -156,7 +218,15 @@ export function getSuggestChips(state: GameState): SuggestChip[] {
       { cmd: 'status', label: 'status' },
     ])
   } else if (ZONES[loc]) {
-    chips.push({ cmd: 'hunt', label: 'hunt' }, { cmd: 'town', label: 'town' })
+    chips.push({ cmd: 'hunt', label: 'hunt' })
+    if (getBossForZone(loc)) {
+      chips.push({ cmd: 'boss', label: 'boss' })
+    }
+    const next = nextRegionEntry(state)
+    if (next && loc in BOSS_BY_ZONE) {
+      chips.push(goChip(next))
+    }
+    chips.push({ cmd: 'town', label: 'town' })
     pushUnique(chips, gear)
     pushUnique(chips, [
       { cmd: 'status', label: 'status' },
