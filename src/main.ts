@@ -142,11 +142,32 @@ function renderShell(): void {
   cli.addEventListener('blur', () => {
     document.body.classList.remove('keyboard-open')
     syncVisualViewport()
+    // Desktop: keep CLI focused (skip if settings / another field / text selection)
+    window.setTimeout(() => {
+      if (!wantsDesktopCliFocus()) return
+      const active = document.activeElement as HTMLElement | null
+      if (active && active.id !== 'cli') {
+        const tag = active.tagName
+        if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return
+        if (active.isContentEditable) return
+      }
+      const sel = window.getSelection()
+      if (sel && sel.type === 'Range' && (sel.toString()?.length ?? 0) > 0) return
+      focusCliDesktop()
+    }, 0)
   })
 
   document.querySelector('#btn-explorer')?.addEventListener('click', () => toggleExplorerDrawer())
   document.querySelector('#btn-inspector')?.addEventListener('click', () => toggleInspectorDrawer())
   document.querySelector('#mobile-backdrop')?.addEventListener('click', () => closeMobileDrawers())
+
+  // Desktop: click terminal / editor to return focus without opening mobile keyboard logic
+  document.querySelector('#editor')?.addEventListener('mousedown', (e) => {
+    if (!wantsDesktopCliFocus()) return
+    const t = e.target as HTMLElement
+    if (t.closest('input, textarea, select, button, a, [data-cmd]')) return
+    focusCliDesktop()
+  })
 
   document.querySelector('#cli-suggest')?.addEventListener('pointerdown', (e) => {
     const btn = (e.target as HTMLElement).closest('[data-cmd]')
@@ -159,10 +180,12 @@ function renderShell(): void {
     const btn = (e.target as HTMLElement).closest('[data-cmd]') as HTMLElement | null
     if (!btn?.dataset.cmd) return
     e.preventDefault()
-    // Keep input dock flat: no keyboard / keyboard-open layout shift from chip taps
-    const cli = document.querySelector<HTMLInputElement>('#cli')
-    cli?.blur()
-    document.body.classList.remove('keyboard-open')
+    // Mobile: keep dock flat (no keyboard). Desktop: keep CLI focused.
+    if (isCoarsePointerMobile()) {
+      const cliEl = document.querySelector<HTMLInputElement>('#cli')
+      cliEl?.blur()
+      document.body.classList.remove('keyboard-open')
+    }
     runCommand(btn.dataset.cmd)
   })
 
@@ -181,6 +204,7 @@ function renderShell(): void {
     if (cmd) {
       runCommand(cmd)
       closeMobileDrawers()
+      focusCliDesktop()
     }
   })
 
@@ -188,14 +212,20 @@ function renderShell(): void {
     const btn = (e.target as HTMLElement).closest('.activity-btn') as HTMLElement | null
     if (!btn?.dataset.view) return
     if (btn.dataset.view === 'settings') openSettings()
-    else closeSettings()
+    else {
+      closeSettings()
+      focusCliDesktop()
+    }
   })
 
   document.querySelector('#tabbar')!.addEventListener('click', (e) => {
     const tab = (e.target as HTMLElement).closest('.tab') as HTMLElement | null
     if (!tab?.dataset.view) return
     if (tab.dataset.view === 'settings') openSettings()
-    else closeSettings()
+    else {
+      closeSettings()
+      focusCliDesktop()
+    }
   })
 }
 
@@ -248,6 +278,7 @@ function runCommand(raw: string): void {
   const cmd = line.split(/\s+/)[0]?.toLowerCase()
   if (cmd === 'clear' || cmd === 'cls') {
     refresh()
+    focusCliDesktop()
     return
   }
 
@@ -286,6 +317,7 @@ async function revealMessages(
   commandBusy = false
   setCliBusy(false)
   refresh()
+  focusCliDesktop()
 }
 
 function setCliBusy(busy: boolean): void {
@@ -694,8 +726,14 @@ function renderSettings(): void {
     }
   })
 
-  root.querySelector('#settings-close-btn')?.addEventListener('click', () => closeSettings())
-  root.querySelector('#btn-settings-close')?.addEventListener('click', () => closeSettings())
+  root.querySelector('#settings-close-btn')?.addEventListener('click', () => {
+    closeSettings()
+    focusCliDesktop()
+  })
+  root.querySelector('#btn-settings-close')?.addEventListener('click', () => {
+    closeSettings()
+    focusCliDesktop()
+  })
   root.querySelector('#btn-settings-reset')?.addEventListener('click', () => {
     resetSettings()
     restartAutosaveTimer()
@@ -1002,6 +1040,21 @@ function isCoarsePointerMobile(): boolean {
   return window.matchMedia('(max-width: 720px), (hover: none) and (pointer: coarse)').matches
 }
 
+/** Desktop keeps the CLI focused; mobile only focuses when the user taps the input. */
+function wantsDesktopCliFocus(): boolean {
+  if (isCoarsePointerMobile()) return false
+  if (getUiView() === 'settings') return false
+  return true
+}
+
+function focusCliDesktop(): void {
+  if (!wantsDesktopCliFocus()) return
+  const cli = document.querySelector<HTMLInputElement>('#cli')
+  if (!cli || cli.disabled) return
+  if (document.activeElement === cli) return
+  cli.focus({ preventScroll: true })
+}
+
 function showFatal(err: unknown): void {
   const detail = err instanceof Error ? `${err.name}: ${err.message}` : String(err)
   app.innerHTML = `<pre style="padding:24px;color:#f14c4c;white-space:pre-wrap">
@@ -1020,9 +1073,9 @@ try {
   subscribeSettings(() => refresh())
   welcome(state)
   refresh()
-  // Don't autofocus on mobile — opening keyboard on load covers the UI
+  // Desktop: keep CLI focused. Mobile: tap the input when you want the keyboard.
   if (!isCoarsePointerMobile()) {
-    document.querySelector<HTMLInputElement>('#cli')?.focus()
+    focusCliDesktop()
   }
   startAutosave(autoSave)
 } catch (err) {
