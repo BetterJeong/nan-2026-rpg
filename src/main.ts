@@ -8,7 +8,25 @@ import {
   pushMessage,
   startAutosave,
   getAutosaveMinutes,
+  restartAutosaveTimer,
+  MIN_AUTOSAVE_MIN,
+  MAX_AUTOSAVE_MIN,
 } from './game/save'
+import {
+  applySettingsToDom,
+  closeSettings,
+  getSettings,
+  getSettingsCategory,
+  getUiView,
+  openSettings,
+  patchSettings,
+  resetSettings,
+  setSettingsCategory,
+  subscribeSettings,
+  FONT_SIZE_MAX,
+  FONT_SIZE_MIN,
+  type SettingsCategory,
+} from './game/settings'
 import { getTotalAtk, getTotalDef, getEffectiveMaxHp, getEffectiveMaxMp } from './game/player'
 import { SLOT_LABELS, SLOT_ORDER } from './game/types'
 import type { GameState } from './game/types'
@@ -16,6 +34,7 @@ import type { GameState } from './game/types'
 let state: GameState = createInitialState()
 let historyIndex = -1
 let draft = ''
+let settingsQuery = ''
 
 const app = document.querySelector<HTMLDivElement>('#app')!
 
@@ -24,27 +43,27 @@ function autoSave(): void {
   pushMessage(state, 'system', `autosave: ${msg}`)
   refresh()
 }
+
 function renderShell(): void {
   app.innerHTML = `
     <div class="titlebar">
       <div class="titlebar-dots"><span class="r"></span><span class="y"></span><span class="g"></span></div>
-      <div class="titlebar-title">DevQuest — nan-2026-rpg — terminal.rpg</div>
+      <div class="titlebar-title" id="titlebar-title">DevQuest — nan-2026-rpg — terminal.rpg</div>
     </div>
     <div class="workspace">
-      <nav class="activity" aria-label="Activity Bar">
-        <div class="activity-btn active" title="Explorer">📁</div>
-        <div class="activity-btn" title="Search">🔍</div>
-        <div class="activity-btn" title="Source Control">⑂</div>
-        <div class="activity-btn" title="Extensions">▦</div>
+      <nav class="activity" aria-label="Activity Bar" id="activity">
+        <button type="button" class="activity-btn active" data-view="game" title="Explorer">📁</button>
+        <button type="button" class="activity-btn" data-view="settings" title="Settings">⚙️</button>
+        <div class="activity-spacer"></div>
       </nav>
       <aside class="explorer" id="explorer"></aside>
       <main class="editor">
-        <div class="tabbar">
-          <div class="tab active"><span class="dot"></span> terminal.rpg</div>
-          <div class="tab">readme.md</div>
+        <div class="tabbar" id="tabbar"></div>
+        <div class="game-view" id="game-view">
+          <div class="cli-hud" id="hud"></div>
+          <div class="terminal" id="terminal"></div>
         </div>
-        <div class="cli-hud" id="hud"></div>
-        <div class="terminal" id="terminal"></div>
+        <div class="settings-view" id="settings-view"></div>
         <div class="cli-input-row">
           <span class="cli-prompt" id="prompt">player@town:~$</span>
           <input class="cli-input" id="cli" type="text" autocomplete="off" spellcheck="false"
@@ -57,11 +76,12 @@ function renderShell(): void {
       <div class="statusbar-left">
         <span>⎇ main*</span>
         <span id="sb-loc">town</span>
+        <span id="sb-theme">theme: dark</span>
       </div>
       <div class="statusbar-right">
         <span>UTF-8</span>
         <span>TypeScript RPG</span>
-        <span>Ln 1, Col 1</span>
+        <span id="sb-view">Terminal</span>
       </div>
     </footer>
   `
@@ -69,12 +89,29 @@ function renderShell(): void {
   const cli = document.querySelector<HTMLInputElement>('#cli')!
   cli.addEventListener('keydown', onKeyDown)
 
-  // Explorer click -> command
   document.querySelector('#explorer')!.addEventListener('click', (e) => {
     const t = (e.target as HTMLElement).closest('.tree-item') as HTMLElement | null
     if (!t || t.classList.contains('locked')) return
+    if (t.dataset.settingsCat) {
+      setSettingsCategory(t.dataset.settingsCat as SettingsCategory)
+      return
+    }
     const cmd = t.dataset.cmd
     if (cmd) runCommand(cmd)
+  })
+
+  document.querySelector('#activity')!.addEventListener('click', (e) => {
+    const btn = (e.target as HTMLElement).closest('.activity-btn') as HTMLElement | null
+    if (!btn?.dataset.view) return
+    if (btn.dataset.view === 'settings') openSettings()
+    else closeSettings()
+  })
+
+  document.querySelector('#tabbar')!.addEventListener('click', (e) => {
+    const tab = (e.target as HTMLElement).closest('.tab') as HTMLElement | null
+    if (!tab?.dataset.view) return
+    if (tab.dataset.view === 'settings') openSettings()
+    else closeSettings()
   })
 }
 
@@ -112,13 +149,52 @@ function runCommand(raw: string): void {
 }
 
 function refresh(): void {
-  renderHud()
-  renderTerminal()
+  const view = getUiView()
+  document.body.classList.toggle('view-settings', view === 'settings')
+  renderActivity()
+  renderTabs()
   renderExplorer()
+  if (view === 'settings') {
+    renderSettings()
+  } else {
+    renderHud()
+    renderTerminal()
+    updatePrompt()
+  }
   renderInspector()
-  updatePrompt()
   const sb = document.querySelector('#sb-loc')
   if (sb) sb.textContent = getHud(state).location
+  const themeEl = document.querySelector('#sb-theme')
+  if (themeEl) themeEl.textContent = `theme: ${getSettings().theme}`
+  const viewEl = document.querySelector('#sb-view')
+  if (viewEl) viewEl.textContent = view === 'settings' ? 'Settings' : 'Terminal'
+  const title = document.querySelector('#titlebar-title')
+  if (title) {
+    title.textContent =
+      view === 'settings'
+        ? 'DevQuest — settings.json'
+        : 'DevQuest — nan-2026-rpg — terminal.rpg'
+  }
+}
+
+function renderActivity(): void {
+  const view = getUiView()
+  document.querySelectorAll<HTMLElement>('.activity-btn').forEach((btn) => {
+    btn.classList.toggle('active', btn.dataset.view === view)
+  })
+}
+
+function renderTabs(): void {
+  const view = getUiView()
+  const tabbar = document.querySelector('#tabbar')!
+  tabbar.innerHTML = `
+    <button type="button" class="tab ${view === 'game' ? 'active' : ''}" data-view="game">
+      <span class="dot"></span> terminal.rpg
+    </button>
+    <button type="button" class="tab ${view === 'settings' ? 'active' : ''}" data-view="settings">
+      settings.json
+    </button>
+  `
 }
 
 function renderHud(): void {
@@ -126,7 +202,8 @@ function renderHud(): void {
   const hpPct = Math.max(0, Math.min(100, (h.hp / h.maxHp) * 100))
   const mpPct = Math.max(0, Math.min(100, (h.mp / h.maxMp) * 100))
   const expPct = Math.max(0, Math.min(100, (h.exp / h.expMax) * 100))
-  const el = document.querySelector('#hud')!
+  const el = document.querySelector('#hud')
+  if (!el) return
   el.innerHTML = `
     <div class="hud-item"><span class="hud-label">Lv</span><strong>${h.level}</strong></div>
     <div class="hud-item">
@@ -150,7 +227,8 @@ function renderHud(): void {
 }
 
 function renderTerminal(): void {
-  const term = document.querySelector('#terminal')!
+  const term = document.querySelector('#terminal')
+  if (!term) return
   term.innerHTML = state.messages
     .map((m) => `<div class="term-line ${m.kind}">${escapeHtml(m.text)}</div>`)
     .join('')
@@ -158,6 +236,33 @@ function renderTerminal(): void {
 }
 
 function renderExplorer(): void {
+  const explorer = document.querySelector('#explorer')!
+  if (getUiView() === 'settings') {
+    const cat = getSettingsCategory()
+    explorer.innerHTML = `
+      <div class="panel-header">Settings</div>
+      <div class="explorer-section">
+        <div class="explorer-section-title">CATEGORIES</div>
+        <div class="tree-item ${cat === 'appearance' ? 'active' : ''}" data-settings-cat="appearance">
+          <span class="icon">🎨</span>Appearance
+        </div>
+        <div class="tree-item ${cat === 'game' ? 'active' : ''}" data-settings-cat="game">
+          <span class="icon">🎮</span>Game
+        </div>
+        <div class="tree-item ${cat === 'terminal' ? 'active' : ''}" data-settings-cat="terminal">
+          <span class="icon">⌨️</span>Terminal
+        </div>
+      </div>
+      <div class="explorer-section">
+        <div class="explorer-section-title">ACTIONS</div>
+        <div class="tree-item" data-cmd="settings close"><span class="icon">↩️</span>Back to Terminal</div>
+        <div class="tree-item" data-cmd="settings reset"><span class="icon">↺</span>Reset Defaults</div>
+      </div>
+      <p class="tree-hint">Or type: settings | theme dark | autosave 10</p>
+    `
+    return
+  }
+
   const p = state.player
   const loc = p.location
   const zonesHtml = Object.values(ZONES)
@@ -172,7 +277,7 @@ function renderExplorer(): void {
     })
     .join('')
 
-  document.querySelector('#explorer')!.innerHTML = `
+  explorer.innerHTML = `
     <div class="panel-header">Explorer</div>
     <div class="explorer-section">
       <div class="explorer-section-title">WORLD</div>
@@ -191,8 +296,271 @@ function renderExplorer(): void {
       <div class="tree-item" data-cmd="hunt"><span class="icon">⚔️</span>hunt</div>
       <div class="tree-item" data-cmd="help"><span class="icon">❓</span>help</div>
       <div class="tree-item" data-cmd="save"><span class="icon">💾</span>save</div>
+      <div class="tree-item" data-cmd="settings"><span class="icon">⚙️</span>settings</div>
     </div>
     <p class="tree-hint">Click a node or type a command in the CLI.</p>
+  `
+}
+
+function renderSettings(): void {
+  const s = getSettings()
+  const cat = getSettingsCategory()
+  const q = settingsQuery.trim().toLowerCase()
+  const root = document.querySelector('#settings-view')!
+  root.innerHTML = `
+    <div class="settings-toolbar">
+      <input class="settings-search" id="settings-search" type="search"
+        placeholder="Search settings" value="${escapeAttr(settingsQuery)}" />
+      <button type="button" class="tab" id="settings-close-btn" style="height:28px;border-top:none">Close</button>
+    </div>
+    <div class="settings-body" id="settings-body">
+      ${renderSettingsSection(
+        'appearance',
+        'Appearance',
+        'Color theme and layout chrome',
+        cat,
+        q,
+        [
+          settingSelect(
+            'Color Theme',
+            'Dark / Light mode for the whole IDE UI',
+            'theme',
+            'theme',
+            s.theme,
+            [
+              ['dark', 'Dark+ (default)'],
+              ['light', 'Light+'],
+            ],
+          ),
+          settingToggle(
+            'Show Inspector',
+            'Right-side inspector panel',
+            'inspector on|off',
+            'showInspector',
+            s.showInspector,
+          ),
+          settingToggle(
+            'Compact Explorer',
+            'Narrower left sidebar, hide hints',
+            'explorer compact|normal',
+            'compactExplorer',
+            s.compactExplorer,
+          ),
+        ],
+      )}
+      ${renderSettingsSection(
+        'game',
+        'Game',
+        'Gameplay environment options',
+        cat,
+        q,
+        [
+          settingNumber(
+            'Autosave Interval',
+            `Auto-save to localStorage every N minutes (${MIN_AUTOSAVE_MIN}-${MAX_AUTOSAVE_MIN})`,
+            'autosave',
+            'autosaveMinutes',
+            s.autosaveMinutes,
+            MIN_AUTOSAVE_MIN,
+            MAX_AUTOSAVE_MIN,
+          ),
+          settingToggle(
+            'Show HUD',
+            'Top status strip (HP / MP / EXP)',
+            'hud on|off',
+            'showHud',
+            s.showHud,
+          ),
+          settingToggle(
+            'Combat Hints',
+            'Print combat command hints when a battle starts',
+            'hints on|off',
+            'combatHints',
+            s.combatHints,
+          ),
+        ],
+      )}
+      ${renderSettingsSection(
+        'terminal',
+        'Terminal',
+        'CLI appearance',
+        cat,
+        q,
+        [
+          settingNumber(
+            'Font Size',
+            `Terminal and prompt font size (${FONT_SIZE_MIN}-${FONT_SIZE_MAX}px)`,
+            'fontsize',
+            'fontSize',
+            s.fontSize,
+            FONT_SIZE_MIN,
+            FONT_SIZE_MAX,
+          ),
+        ],
+      )}
+      <div class="settings-actions">
+        <button type="button" class="primary" id="btn-settings-close">Back to Terminal</button>
+        <button type="button" id="btn-settings-reset">Reset to Defaults</button>
+      </div>
+    </div>
+  `
+
+  const search = document.querySelector<HTMLInputElement>('#settings-search')!
+  search.addEventListener('input', () => {
+    settingsQuery = search.value
+    filterSettingsRows(settingsQuery)
+  })
+
+  root.querySelector('#settings-close-btn')?.addEventListener('click', () => closeSettings())
+  root.querySelector('#btn-settings-close')?.addEventListener('click', () => closeSettings())
+  root.querySelector('#btn-settings-reset')?.addEventListener('click', () => {
+    resetSettings()
+    restartAutosaveTimer()
+    pushMessage(state, 'system', 'settings reset to defaults')
+    refresh()
+  })
+
+  root.querySelectorAll<HTMLSelectElement>('select[data-key]').forEach((el) => {
+    el.addEventListener('change', () => {
+      if (el.dataset.key === 'theme') {
+        applyPatch({ theme: el.value === 'light' ? 'light' : 'dark' })
+      }
+    })
+  })
+  root.querySelectorAll<HTMLInputElement>('input[type="number"][data-key]').forEach((el) => {
+    el.addEventListener('change', () => {
+      const key = el.dataset.key
+      const n = parseInt(el.value, 10)
+      if (key === 'autosaveMinutes') applyPatch({ autosaveMinutes: n })
+      else if (key === 'fontSize') applyPatch({ fontSize: n })
+    })
+  })
+  root.querySelectorAll<HTMLButtonElement>('button.toggle[data-key]').forEach((el) => {
+    el.addEventListener('click', () => {
+      const key = el.dataset.key
+      const next = el.dataset.value !== 'true'
+      if (key === 'showInspector') applyPatch({ showInspector: next })
+      else if (key === 'showHud') applyPatch({ showHud: next })
+      else if (key === 'compactExplorer') applyPatch({ compactExplorer: next })
+      else if (key === 'combatHints') applyPatch({ combatHints: next })
+    })
+  })
+}
+
+function applyPatch(partial: Parameters<typeof patchSettings>[0]): void {
+  const res = patchSettings(partial)
+  if (!res.ok) {
+    pushMessage(state, 'error', res.error)
+    refresh()
+    return
+  }
+  if (res.autosaveChanged) restartAutosaveTimer()
+  refresh()
+}
+
+function filterSettingsRows(query: string): void {
+  const q = query.trim().toLowerCase()
+  document.querySelectorAll<HTMLElement>('.setting-row').forEach((row) => {
+    if (!q) {
+      row.classList.remove('hidden')
+      return
+    }
+    const text = row.textContent?.toLowerCase() ?? ''
+    row.classList.toggle('hidden', !text.includes(q))
+  })
+}
+
+function renderSettingsSection(
+  id: SettingsCategory,
+  title: string,
+  desc: string,
+  active: SettingsCategory,
+  query: string,
+  rows: string[],
+): string {
+  // When searching, show all matching sections; otherwise focus active category first but still list all like VS Code
+  const emphasize = !query && active === id
+  return `
+    <section class="settings-section" data-section="${id}" style="${emphasize ? '' : ''}">
+      <h2>${title}</h2>
+      <p class="section-desc">${desc}</p>
+      ${rows.join('')}
+    </section>
+  `
+}
+
+function settingSelect(
+  title: string,
+  desc: string,
+  cmd: string,
+  key: string,
+  value: string,
+  options: [string, string][],
+): string {
+  return `
+    <div class="setting-row" data-keys="${key} ${title.toLowerCase()}">
+      <div class="setting-meta">
+        <div class="setting-title">${title}</div>
+        <div class="setting-desc">${desc}</div>
+        <span class="setting-key">${cmd}</span>
+      </div>
+      <div class="setting-control">
+        <select data-key="${key}">
+          ${options
+            .map(
+              ([v, label]) =>
+                `<option value="${v}" ${v === value ? 'selected' : ''}>${label}</option>`,
+            )
+            .join('')}
+        </select>
+      </div>
+    </div>
+  `
+}
+
+function settingNumber(
+  title: string,
+  desc: string,
+  cmd: string,
+  key: string,
+  value: number,
+  min: number,
+  max: number,
+): string {
+  return `
+    <div class="setting-row" data-keys="${key} ${title.toLowerCase()}">
+      <div class="setting-meta">
+        <div class="setting-title">${title}</div>
+        <div class="setting-desc">${desc}</div>
+        <span class="setting-key">${cmd}</span>
+      </div>
+      <div class="setting-control">
+        <input type="number" data-key="${key}" value="${value}" min="${min}" max="${max}" />
+      </div>
+    </div>
+  `
+}
+
+function settingToggle(
+  title: string,
+  desc: string,
+  cmd: string,
+  key: string,
+  value: boolean,
+): string {
+  return `
+    <div class="setting-row" data-keys="${key} ${title.toLowerCase()}">
+      <div class="setting-meta">
+        <div class="setting-title">${title}</div>
+        <div class="setting-desc">${desc}</div>
+        <span class="setting-key">${cmd}</span>
+      </div>
+      <div class="setting-control">
+        <button type="button" class="toggle ${value ? 'on' : ''}" data-key="${key}" data-value="${value}">
+          <i></i>
+        </button>
+      </div>
+    </div>
   `
 }
 
@@ -224,11 +592,12 @@ function renderInspector(): void {
 
   const skillLines = p.skills
     .map((id) => {
-      const s = SKILLS[id]
-      return `<div class="insp-row"><span class="k">${escapeHtml(s.name)}</span><span class="v">MP ${s.mpCost}</span></div>`
+      const sk = SKILLS[id]
+      return `<div class="insp-row"><span class="k">${escapeHtml(sk.name)}</span><span class="v">MP ${sk.mpCost}</span></div>`
     })
     .join('')
 
+  const s = getSettings()
   document.querySelector('#inspector')!.innerHTML = `
     <div class="panel-header">Inspector</div>
     <div class="inspector-body">
@@ -243,6 +612,12 @@ function renderInspector(): void {
         <div class="insp-row"><span class="k">Gold</span><span class="v">${p.gold}G</span></div>
       </div>
       ${combatBlock}
+      <div class="insp-group">
+        <h3>Environment</h3>
+        <div class="insp-row"><span class="k">Theme</span><span class="v">${s.theme}</span></div>
+        <div class="insp-row"><span class="k">Autosave</span><span class="v">${s.autosaveMinutes}m</span></div>
+        <div class="insp-row"><span class="k">Font</span><span class="v">${s.fontSize}px</span></div>
+      </div>
       <div class="insp-group">
         <h3>Equipment</h3>
         <div class="insp-equip">${equipLines}</div>
@@ -294,6 +669,10 @@ function escapeHtml(s: string): string {
     .replace(/"/g, '&quot;')
 }
 
+function escapeAttr(s: string): string {
+  return escapeHtml(s).replace(/'/g, '&#39;')
+}
+
 function showFatal(err: unknown): void {
   const detail = err instanceof Error ? `${err.name}: ${err.message}` : String(err)
   app.innerHTML = `<pre style="padding:24px;color:#f14c4c;white-space:pre-wrap">
@@ -306,12 +685,14 @@ If the save is corrupt, clear localStorage and reload.</pre>`
 }
 
 try {
+  applySettingsToDom()
   renderShell()
+  subscribeSettings(() => refresh())
   welcome(state)
   pushMessage(
     state,
     'system',
-    `autosave every ${getAutosaveMinutes()} min (change: autosave <1-60>)`,
+    `autosave every ${getAutosaveMinutes()} min · theme ${getSettings().theme} · open settings: settings`,
   )
   refresh()
   document.querySelector<HTMLInputElement>('#cli')?.focus()

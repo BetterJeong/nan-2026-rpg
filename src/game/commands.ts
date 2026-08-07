@@ -39,6 +39,18 @@ import {
   MIN_AUTOSAVE_MIN,
   MAX_AUTOSAVE_MIN,
 } from './save'
+import {
+  closeSettings,
+  formatSettingsStatus,
+  getSettings,
+  openSettings,
+  patchSettings,
+  resetSettings,
+  shouldShowCombatHints,
+  FONT_SIZE_MAX,
+  FONT_SIZE_MIN,
+  type SettingsCategory,
+} from './settings'
 import type { GameState, ItemDef } from './types'
 import { SLOT_LABELS, SLOT_ORDER } from './types'
 
@@ -90,11 +102,21 @@ available commands
   help            this help
   save            save game
   load            load save
+  settings        open settings UI (or print status)
+  theme <mode>    dark | light
+  fontsize <n>    terminal font ${FONT_SIZE_MIN}-${FONT_SIZE_MAX}
+  inspector on|off
+  hud on|off
+  explorer compact|normal
+  hints on|off
   autosave [min]  show/set autosave interval (1-60, default 5)
+  settings        open settings UI (optional; CLI still works)
   clear / cls     clear screen
   history         command history
   reset           new game (keeps save file)
 `.trim()
+
+
 
 export function handleCommand(state: GameState, raw: string): CommandResult {
   const line = raw.trim()
@@ -138,6 +160,159 @@ export function handleCommand(state: GameState, raw: string): CommandResult {
       pushMessage(state, 'success', saveGame(state))
       break
 
+    case 'settings':
+    case 'setting':
+    case 'preferences':
+    case 'prefs':
+    case 'config': {
+      const a = arg.toLowerCase()
+      if (!arg || a === 'open' || a === 'ui') {
+        openSettings()
+        pushMessage(state, 'success', 'opened settings UI (close: settings close)')
+        pushMessage(state, 'output', formatSettingsStatus())
+        break
+      }
+      if (a === 'close' || a === 'back' || a === 'game' || a === 'terminal') {
+        closeSettings()
+        pushMessage(state, 'success', 'closed settings. back to terminal.')
+        break
+      }
+      if (a === 'list' || a === 'status' || a === 'show') {
+        pushMessage(state, 'output', formatSettingsStatus())
+        break
+      }
+      if (a === 'reset') {
+        resetSettings()
+        restartAutosaveTimer()
+        pushMessage(state, 'success', 'settings reset to defaults')
+        break
+      }
+      const cat = parseSettingsCategory(arg)
+      if (cat) {
+        openSettings(cat)
+        pushMessage(state, 'success', `settings > ${cat}`)
+        break
+      }
+      pushMessage(
+        state,
+        'error',
+        'usage: settings | settings close | settings list | settings reset | settings appearance|game|terminal',
+      )
+      break
+    }
+
+    case 'theme': {
+      if (!arg) {
+        pushMessage(state, 'output', `theme: ${getSettings().theme}  (theme dark | theme light)`)
+        break
+      }
+      const mode = arg.toLowerCase()
+      if (mode !== 'dark' && mode !== 'light') {
+        pushMessage(state, 'error', 'usage: theme dark | theme light')
+        break
+      }
+      const res = patchSettings({ theme: mode })
+      if (!res.ok) {
+        pushMessage(state, 'error', res.error)
+        break
+      }
+      pushMessage(state, 'success', `theme set to ${mode}`)
+      break
+    }
+
+    case 'inspector': {
+      const v = parseOnOff(arg)
+      if (v === null && arg) {
+        pushMessage(state, 'error', 'usage: inspector on | off')
+        break
+      }
+      if (v === null) {
+        pushMessage(state, 'output', `showInspector: ${getSettings().showInspector}`)
+        break
+      }
+      patchSettings({ showInspector: v })
+      pushMessage(state, 'success', `inspector ${v ? 'on' : 'off'}`)
+      break
+    }
+
+    case 'hud': {
+      const v = parseOnOff(arg)
+      if (v === null && arg) {
+        pushMessage(state, 'error', 'usage: hud on | off')
+        break
+      }
+      if (v === null) {
+        pushMessage(state, 'output', `showHud: ${getSettings().showHud}`)
+        break
+      }
+      patchSettings({ showHud: v })
+      pushMessage(state, 'success', `hud ${v ? 'on' : 'off'}`)
+      break
+    }
+
+    case 'hints':
+    case 'combathints': {
+      const v = parseOnOff(arg)
+      if (v === null && arg) {
+        pushMessage(state, 'error', 'usage: hints on | off')
+        break
+      }
+      if (v === null) {
+        pushMessage(state, 'output', `combatHints: ${getSettings().combatHints}`)
+        break
+      }
+      patchSettings({ combatHints: v })
+      pushMessage(state, 'success', `combat hints ${v ? 'on' : 'off'}`)
+      break
+    }
+
+    case 'explorer': {
+      const a = arg.toLowerCase()
+      if (!a) {
+        pushMessage(
+          state,
+          'output',
+          `compactExplorer: ${getSettings().compactExplorer}  (explorer compact | normal)`,
+        )
+        break
+      }
+      if (a === 'compact' || a === 'narrow') {
+        patchSettings({ compactExplorer: true })
+        pushMessage(state, 'success', 'explorer: compact')
+        break
+      }
+      if (a === 'normal' || a === 'default' || a === 'wide') {
+        patchSettings({ compactExplorer: false })
+        pushMessage(state, 'success', 'explorer: normal')
+        break
+      }
+      pushMessage(state, 'error', 'usage: explorer compact | normal')
+      break
+    }
+
+    case 'fontsize':
+    case 'font-size': {
+      if (!arg) {
+        pushMessage(
+          state,
+          'output',
+          `fontSize: ${getSettings().fontSize}px  (fontsize ${FONT_SIZE_MIN}-${FONT_SIZE_MAX})`,
+        )
+        break
+      }
+      if (!/^\d+$/.test(arg)) {
+        pushMessage(state, 'error', `usage: fontsize <${FONT_SIZE_MIN}-${FONT_SIZE_MAX}>`)
+        break
+      }
+      const res = patchSettings({ fontSize: parseInt(arg, 10) })
+      if (!res.ok) {
+        pushMessage(state, 'error', res.error)
+        break
+      }
+      pushMessage(state, 'success', `font size set to ${getSettings().fontSize}px`)
+      break
+    }
+
     case 'autosave': {
       if (!arg) {
         pushMessage(
@@ -156,11 +331,13 @@ export function handleCommand(state: GameState, raw: string): CommandResult {
         )
         break
       }
-      const err = setAutosaveMinutes(mins)
-      if (err) {
-        pushMessage(state, 'error', err)
+      const res = patchSettings({ autosaveMinutes: mins })
+      if (!res.ok) {
+        pushMessage(state, 'error', res.error)
         break
       }
+      // also sync legacy helper
+      setAutosaveMinutes(mins)
       restartAutosaveTimer()
       pushMessage(state, 'success', `autosave interval set to ${mins} min`)
       break
@@ -470,7 +647,9 @@ function handleHunt(state: GameState): CommandResult {
     state.combat = startCombat(mid)
     state.mode = 'combat'
     for (const line of state.combat.log) pushMessage(state, 'combat', line)
-    pushMessage(state, 'system', 'cmds: attack | skill <name> | defend | use <potion> | flee')
+    if (shouldShowCombatHints()) {
+      pushMessage(state, 'system', 'cmds: attack | skill <name> | defend | use <potion> | flee')
+    }
   } else if (roll < 0.9) {
     const itemId = pick(zone.forageItems)
     addItem(state.player, itemId, 1)
@@ -580,6 +759,22 @@ function resolveShopItem(query: string) {
 
 function tokenize(line: string): string[] {
   return line.match(/(?:[^\s"]+|"[^"]*")+/g)?.map((s) => s.replace(/^"|"$/g, '')) ?? []
+}
+
+function parseSettingsCategory(query: string): SettingsCategory | null {
+  const q = query.trim().toLowerCase()
+  if (q === 'appearance' || q === 'theme' || q === 'ui') return 'appearance'
+  if (q === 'game' || q === 'gameplay') return 'game'
+  if (q === 'terminal' || q === 'cli' || q === 'editor') return 'terminal'
+  return null
+}
+
+function parseOnOff(arg: string): boolean | null {
+  const a = arg.trim().toLowerCase()
+  if (!a) return null
+  if (a === 'on' || a === 'true' || a === '1' || a === 'yes') return true
+  if (a === 'off' || a === 'false' || a === '0' || a === 'no') return false
+  return null
 }
 
 export function welcome(state: GameState): void {

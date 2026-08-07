@@ -68,6 +68,17 @@ export function deleteSave(): void {
 }
 
 export function getAutosaveMinutes(): number {
+  // Prefer unified settings store when available
+  try {
+    const raw = localStorage.getItem('nan-2026-rpg-settings')
+    if (raw) {
+      const parsed = JSON.parse(raw) as { autosaveMinutes?: number }
+      const n = parsed.autosaveMinutes
+      if (typeof n === 'number' && n >= MIN_AUTOSAVE_MIN && n <= MAX_AUTOSAVE_MIN) return n
+    }
+  } catch {
+    /* fall through */
+  }
   const raw = localStorage.getItem(AUTOSAVE_KEY)
   if (!raw) return DEFAULT_AUTOSAVE_MIN
   const n = parseInt(raw, 10)
@@ -83,6 +94,17 @@ export function setAutosaveMinutes(minutes: number): string | null {
     return `error: autosave interval must be ${MIN_AUTOSAVE_MIN}-${MAX_AUTOSAVE_MIN} minutes`
   }
   localStorage.setItem(AUTOSAVE_KEY, String(minutes))
+  // keep settings blob in sync if present
+  try {
+    const raw = localStorage.getItem('nan-2026-rpg-settings')
+    if (raw) {
+      const parsed = JSON.parse(raw) as Record<string, unknown>
+      parsed.autosaveMinutes = minutes
+      localStorage.setItem('nan-2026-rpg-settings', JSON.stringify(parsed))
+    }
+  } catch {
+    /* ignore */
+  }
   return null
 }
 

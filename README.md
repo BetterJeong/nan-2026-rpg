@@ -111,16 +111,50 @@ CLI에 `help`를 입력해도 동일한 목록을 볼 수 있습니다.
 |------|------|------|------|
 | `help` | `?`, `man` | 전체 명령어 도움말 | `help` |
 | `save` | — | 현재 상태를 localStorage에 저장. **자동 저장**도 동작 (기본 5분) | `save` |
-| `autosave` | — | 현재 자동저장 간격 확인 | `autosave` |
-| `autosave <min>` | — | 자동저장 간격 변경 (**1~60분**, localStorage에 유지) | `autosave 10` |
 | `load` | — | 저장 데이터 불러오기 | `load` |
+| `autosave` | — | 현재 자동저장 간격 확인 | `autosave` |
+| `autosave <min>` | — | 자동저장 간격 변경 (**1~60분**) | `autosave 10` |
+| `theme <mode>` | — | 테마 변경 (`dark` / `light`) | `theme light` |
+| `fontsize <n>` | — | 터미널 글자 크기 (11–18) | `fontsize 14` |
+| `settings` | `preferences`, `config` | 설정 UI 열기 (선택 사항) | `settings` |
 | `clear` | `cls` | CLI 화면 지우기 | `clear` |
 | `history` | — | 최근 입력 명령 기록 보기 (↑/↓ 키로도 재입력 가능) | `history` |
 | `reset` | — | 새 게임 시작. 저장 파일은 삭제되지 않음 (덮어쓰려면 `save`) | `reset` |
 
-### 저장 / 자동저장
+### 설정
 
-진행 데이터는 서버가 아니라 **브라우저 localStorage**에 저장됩니다.
+설정은 **CLI 명령이 기본**이고, VS Code 스타일 설정 화면은 **같은 값을 바꾸는 추가 UI**입니다.  
+둘 중 어디로 바꿔도 `localStorage`에 동일하게 저장됩니다.
+
+#### CLI로 전부 설정 (설정 화면 없이도 OK)
+
+| 명령 | 설명 | 예시 |
+|------|------|------|
+| `theme dark\|light` | 다크/라이트 모드 | `theme light` |
+| `autosave [1-60]` | 자동저장 간격(분) 확인/변경 | `autosave 10` |
+| `fontsize [11-18]` | 터미널 폰트 크기 | `fontsize 14` |
+| `inspector on\|off` | 우측 Inspector 표시 | `inspector off` |
+| `hud on\|off` | 상단 HUD 표시 | `hud off` |
+| `explorer compact\|normal` | 왼쪽 탐색기 좁게/기본 | `explorer compact` |
+| `hints on\|off` | 전투 시작 시 명령 힌트 | `hints off` |
+| `settings list` | 현재 설정 값 출력 | `settings list` |
+| `settings reset` | 설정 기본값 복구 | `settings reset` |
+
+#### 설정 화면 (추가 진입점)
+
+| 여는 방법 | 설명 |
+|-----------|------|
+| 왼쪽 ⚙️ | Settings 뷰 |
+| Explorer → `settings` | 동일 |
+| `settings` / `preferences` / `config` | CLI로 UI 열기 |
+| `settings close` | 터미널 뷰로 복귀 |
+| 탭 `settings.json` | 설정 탭 |
+
+설정 화면이 열려 있어도 **아래 CLI 입력창은 그대로** 쓸 수 있습니다.
+
+설정 저장 키: `nan-2026-rpg-settings`
+
+### 저장 / 자동저장
 
 | 구분 | 키 | 내용 |
 |------|-----|------|
