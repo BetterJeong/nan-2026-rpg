@@ -1,61 +1,23 @@
-# DevQuest — IDE Concept RPG
+# DevQuest
 
-VS Code 스타일 UI에서 CLI 명령으로 진행하는 웹 RPG입니다.  
+VS Code 스타일 UI에서 CLI 명령으로 진행하는 웹 RPG입니다.
 개발하는 척 몰래 게임을 즐겨보세요.
 
-플레이: https://betterjeong.github.io/nan-2026-rpg/
+**Play:** https://betterjeong.github.io/nan-2026-rpg/
 
----
+## Features
 
-## 한눈에 보기
+- IDE 레이아웃 — Activity Bar, Explorer, CLI, Inspector, HUD, 설정 탭
+- 턴제 전투 — 공격 / 스킬 / 방어 / 포션 / 도망, 보스 즉사 예고는 `defend`로 대응
+- 숲 → 바다 → 산 진행 — 상한 존에서 `boss`를 깨야 다음 지역 해금
+- 마을 NPC 호감도 — 둘러보기 · 대화 · 선물 (답변은 번호 또는 문장 입력)
+- `auto` 자동전투 — 기본 공격만 연전, `stop`으로 종료
+- 한국어 / 영어 UI — 핵심 명령은 영어, `둘러보기` · `자동전투` 같은 한글 별칭도 지원
+- 상황별 추천 칩, 주제별 `help`, localStorage 저장 · 자동저장 · 재접속 이어하기
 
-### 컨셉
+## Tech
 
-브라우저에서 VS Code UI를 재현한 셸 위에, 터미널 명령(`go`, `hunt`, `attack` …)으로 턴제 RPG를 돌립니다.  
-사냥·장비·보스 게이트·마을 NPC 호감·자동전투까지, **IDE 크롬 + CLI UX**가 플레이 그 자체입니다.
-
-### 주요 특징
-
-| 특징 | 설명 |
-|------|------|
-| IDE 컨셉 UI | Activity Bar · Explorer · CLI · Inspector · HUD · Statusbar · 설정 탭 |
-| 턴제 전투 | 공격 / 스킬 / 방어 / 포션 / 도망. 보스 **즉사 예고 → defend로 방어** |
-| 지역 진행 | 숲 → 바다 → 산 (상한 존 `boss` 클리어로 다음 지역 해금) |
-| 마을 NPC | 주민 6명 · 호감 대화(2턴) · 선물. 선택지 텍스트 입력도 가능 |
-| 자동전투 | `auto` — 기본 공격만 연전 (사망 또는 `stop`) |
-| 바이링궐 | KO / EN UI·표시 이름. 핵심 명령은 영어, 일부 한글 별칭(`둘러보기`, `자동전투` 등) |
-| 상황별 추천 칩 | 입력창 위 칩으로 모바일·초보 플레이 지원 |
-| 저장 | localStorage 수동/`load` + 자동저장 + **페이지 재진입 시 이어하기** |
-| 인게임 도움말 | `help` → 주제별 / `help slash` · `help hp-potion-s` 등 조회 |
-
-### 기술 스택
-
-| 항목 | 내용 |
-|------|------|
-| 언어 | TypeScript |
-| 빌드 | Vite 5 |
-| UI | Vanilla DOM (프레임워크 없음) |
-| 저장 | `localStorage` |
-| 배포 | GitHub Pages (`vite` base `./`) + GitHub Actions |
-| 의존성 | 런타임 패키지 없음 (dev: `typescript`, `vite`) |
-
-### 콘텐츠 규모 (대략)
-
-- 사냥터 **9존** (숲·바다·산 × 3) + 지역 보스 **3**
-- 플레이어 스킬 **6** (레벨 해금)
-- 장비·소모품 아이템 **50+** (8슬롯 장비)
-- NPC **6명** × 대화 **24개** × 턴 **2**
-- 메시지·이름 KO/EN i18n
-
-### 90초 플레이 플로우
-
-1. `status` → `go mistwood` → `hunt`  
-2. 전투: `attack` / `skill slash` / `defend` / `use hp-potion-s`  
-3. `town` → `둘러보기` → `talk …` → `1`/`2`/`3`  
-4. `go eldergrove` → `boss` → 바다 해금  
-5. `shop` / `equip …` / `save`
-
-더 자세한 규칙·명령표·밸런스는 아래 본문을 보세요.
+TypeScript · Vite 5 · Vanilla DOM · `localStorage` · GitHub Pages
 
 ---
 
@@ -417,29 +379,20 @@ hellothisistestforadmin
 
 ---
 
-## 로컬 실행
+## Build
 
 ```bash
 npm install
-npm run dev
+npm run dev      # 로컬
+npm run build    # dist/ → GitHub Pages
 ```
 
-빌드 / GitHub Pages용:
-
-```bash
-npm run build
-```
-
-`vite` base는 `./` (상대 경로)라서 Pages 하위 경로에서도 동작합니다.  
-푸시 시 GitHub Actions로 Pages에 배포됩니다 (`.github/workflows/deploy.yml`).
+`vite` base는 `./` 이라 Pages 하위 경로에서도 동작합니다.  
+푸시 시 GitHub Actions로 배포됩니다 (`.github/workflows/deploy.yml`).
 
 ---
 
 ## 밸런스
-
-초기 개발용 **초저렙** 기준입니다. 수치는 `src/game/data/` 와 `player.ts` 에 정의되어 있습니다.
-
-**전투 난이도 목표:** 해당 존 수준 장비로 **기본 공격만** 하면(자동전투와 동일) 연전 중 **대략 8~15판에 한 번** 정도 죽도록 잡았습니다. 스킬·포션·방어를 쓰면 훨씬 안전합니다.
 
 ### 플레이어 시작
 
@@ -453,9 +406,6 @@ npm run build
 | 시작 스킬 | `slash` |
 
 ### 레벨업
-
-필요 EXP: `floor(20 + (Lv-1)×18 + (Lv-1)^1.5 × 4)`  
-예: Lv1→2 = 20, 이후 완만히 증가
 
 레벨업마다:
 
@@ -478,7 +428,7 @@ npm run build
 | `tide-cut` | 8 | 14 | ATK ×185% + 6 |
 | `avalanche` | 13 | 18 | ATK ×230% |
 
-### 사냥터 (3난이도 × 3존 = 9) + 보스 게이트
+### 사냥터
 
 진행: **숲 → (eldergrove `boss`) → 바다 → (abysscove `boss`) → 산 → (peakruin `boss`)**
 
@@ -494,60 +444,28 @@ npm run build
 | Mountain | `frostpass` | Lv.15+ **+바다보스** | cliff-golem, storm-eagle |
 | Mountain | `peakruin` | Lv.17+ **+바다보스** | peak-wraith / **보스 `tyrant`** |
 
-레거시 별칭: `forest1`→mistwood, `forest2`→thornpath, `forest3`→eldergrove (한글: 안개숲/가시길/고목숲 등)
-
-대략적인 **다음 존 레벨까지** 평균 전투 횟수 (자동전투·수동 동일 EXP 곡선):
-
-| Zone | 목표 전투 수 |
-|------|-------------|
-| mistwood / thornpath / eldergrove | ~10 |
-| saltshore | ~20 |
-| tidewreck | ~30 |
-| abysscove | ~40 |
-| foothill | ~50 |
-| frostpass | ~70 |
-| peakruin | ~100 |
-
-전투 보상 EXP·골드는 몬스터·존별로 **랜덤 폭**이 있습니다 (EXP ±15%, 골드는 min~max).
-
-일반 몬스터는 존이 올라갈수록 HP/ATK/DEF·보상이 증가합니다 (보스가 지역 정점).  
-일반 드롭률 대략 **25~45%**, 보스 드롭은 **약 18~20%** (고급 장비).
+한글 별칭 예: 안개숲 / 가시길 / 고목숲 등 (`zones`로 확인)
 
 ### 자동전투
 
 - 사냥터에서 `auto` / `자동전투` — 탐색·**기본 공격만** 반복 (스킬·포션·방어 없음)
-- **보스전 불가**. `fast` 설정과 무관하게 **기본보다 약간 느리게** 진행
-- 종료: **사망** 또는 `stop` / `중지` (추천 칩 `stop`)
+- **보스전 불가**
+- 종료: **사망** 또는 `stop` / `중지`
 
-### 보스 요약
+### 보스 드롭
 
-| ID | 대략 Lv | 드롭 예 | 게이트 |
-|----|---------|---------|--------|
-| `grove_guardian` | 7 | `guardian-blade`, `grove-mantle` | → Sea |
-| `tide_leviathan` | 13 | `leviathan-fang`, `abyss-mail` | → Mountain |
-| `tyrant` | 19 | `tyrant-edge`, `summit-aegis` | (최종) |
-
-### 데미지 공식
-
-```text
-raw = ATK - DEF × 0.5
-damage = max(1, floor(raw × (1 ± 15%)))
-```
-
-스킬은 ATK에 `power` / `bonus`를 적용한 뒤 같은 공식을 씁니다.
+| 보스 | 드롭 예 | 게이트 |
+|------|---------|--------|
+| `grove-guardian` | `guardian-blade`, `grove-mantle` | → Sea |
+| `tide-leviathan` | `leviathan-fang`, `abyss-mail` | → Mountain |
+| `tyrant` | `tyrant-edge`, `summit-aegis` | (최종) |
 
 ### 장비 / 상점
 
 - 장비 슬롯: helmet, armor, legs, boots, gloves, weapon, ring, necklace  
-- 장비는 **ATK/DEF뿐 아니라 HP·MP 보너스**가 붙는 경우도 있음  
-- **드롭·채집 장비**가 같은 구간 **상점 장비보다 가성비가 좋도록** 맞춰 둠 (상점은 초보용·보조)  
-- `hunt` 비전투 보상에는 포션뿐 아니라 **장비 채집**도 포함될 수 있음  
-- 소모품 가격은 회복량에 비례  
-  - `hp-potion-s` 25G / +30 HP  
-  - `hp-potion-m` 60G / +70 HP  
-  - `hp-potion-l` 90G / +120 HP  
-  - `mp-potion-s` 20G / +20 MP  
-  - `mp-potion-m` 50G / +45 MP  
-  - `mp-potion-l` 75G / +70 MP  
-- **판매가** = 정가가 있으면 `floor(정가 / 3)`, 드롭 전용은 낮은 `sellPrice`  
-- `buy` / `sell`은 마을에서도 가능 (실행 시 상점 위치로 전환)
+- 장비에 HP·MP 보너스가 붙는 경우도 있음  
+- 사냥·드롭 장비가 상점보다 대체로 낫고, 상점은 초보·보조용  
+- `hunt` 중 포션·장비 채집도 가능  
+- 포션 예: `hp-potion-s` 25G / +30 HP, `mp-potion-s` 20G / +20 MP  
+- 판매가는 대체로 정가의 약 1/3  
+- `buy` / `sell`은 마을에서도 가능
