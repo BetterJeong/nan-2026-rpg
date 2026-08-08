@@ -41,6 +41,7 @@ export function startCombat(monsterId: string): CombatState {
     monsterHp: m.hp,
     monsterMaxHp: m.hp,
     playerDefending: false,
+    pendingLethal: false,
     turn: 'player',
     log: [t(appearKey, { name: monsterLabel(monsterId), level: m.level })],
   }
@@ -177,62 +178,116 @@ function enemyTurn(
   const m = MONSTERS[combat.monsterId]
   const name = monsterLabel(combat.monsterId)
 
-  const useSkill =
-    m.isBoss &&
-    m.skills &&
-    m.skills.length > 0 &&
-    Math.random() < 0.4
-
-  if (useSkill) {
-    const skillId = m.skills![Math.floor(Math.random() * m.skills!.length)]
-    const skill = SKILLS[skillId]
-    if (skill?.heal) {
-      const before = combat.monsterHp
-      combat.monsterHp = Math.min(combat.monsterMaxHp, combat.monsterHp + skill.heal)
-      messages.push(
-        t('combat.bossHeal', {
-          name,
-          skill: skillLabel(skillId),
-          heal: combat.monsterHp - before,
-          hp: combat.monsterHp,
-          max: combat.monsterMaxHp,
-        }),
-      )
-      combat.playerDefending = false
-      return { messages, ended: false }
-    } else if (skill) {
-      const power = skill.power ?? 1
-      const bonus = skill.bonus ?? 0
-      const atk = Math.floor(m.atk * power) + bonus
-      let dmg = calcDamage(atk, getTotalDef(player), 0.12)
+  // —— Boss only: patterned AI ——
+  if (m.isBoss) {
+    // Resolve telegraphed lethal blow from previous turn
+    if (combat.pendingLethal) {
+      combat.pendingLethal = false
       if (combat.playerDefending) {
+        messages.push(t('combat.lethalBlocked', { name }))
+        let dmg = calcDamage(Math.floor(m.atk * 0.6), getTotalDef(player), 0.1)
         dmg = Math.max(1, Math.floor(dmg * 0.5))
-        messages.push(
-          t('combat.bossSkillGuard', {
-            name,
-            skill: skillLabel(skillId),
-            dmg,
-          }),
-        )
-      } else {
-        messages.push(
-          t('combat.bossSkill', {
-            name,
-            skill: skillLabel(skillId),
-            dmg,
-          }),
-        )
+        messages.push(t('combat.hitGuard', { name, dmg }))
+        player.hp = Math.max(0, player.hp - dmg)
+        messages.push(t('combat.yourHp', { hp: player.hp, max: getEffectiveMaxHp(player) }))
+        combat.playerDefending = false
+        if (player.hp <= 0) return finishDefeat(player, messages)
+        return { messages, ended: false }
       }
-      player.hp = Math.max(0, player.hp - dmg)
-      messages.push(t('combat.yourHp', { hp: player.hp, max: getEffectiveMaxHp(player) }))
+      messages.push(t('combat.lethalHit', { name }))
+      player.hp = 0
       combat.playerDefending = false
-      if (player.hp <= 0) {
-        return finishDefeat(player, messages)
-      }
-      return { messages, ended: false }
+      return finishDefeat(player, messages)
     }
+
+    const roll = Math.random()
+    // 40% skill / 30% heal / 30% lethal telegraph (no basic attack)
+    if (roll < 0.4) {
+      return bossSkillOrAttack(player, combat, messages, name)
+    }
+    if (roll < 0.7) {
+      return bossHeal(combat, messages, name)
+    }
+    combat.pendingLethal = true
+    combat.playerDefending = false
+    messages.push(t('combat.lethalWarn', { name }))
+    return { messages, ended: false }
   }
 
+  // —— Normal monsters: basic attack ——
+  return bossBasicAttack(player, combat, messages, name)
+}
+
+function bossHeal(combat: CombatState, messages: string[], name: string): CombatResult {
+  const heal = Math.max(
+    1,
+    Math.floor(combat.monsterMaxHp * (0.12 + Math.random() * 0.06)),
+  )
+  const before = combat.monsterHp
+  combat.monsterHp = Math.min(combat.monsterMaxHp, combat.monsterHp + heal)
+  const gained = combat.monsterHp - before
+  messages.push(
+    t('combat.bossRegen', {
+      name,
+      heal: gained,
+      hp: combat.monsterHp,
+      max: combat.monsterMaxHp,
+    }),
+  )
+  combat.playerDefending = false
+  return { messages, ended: false }
+}
+
+function bossSkillOrAttack(
+  player: PlayerState,
+  combat: CombatState,
+  messages: string[],
+  name: string,
+): CombatResult {
+  const m = MONSTERS[combat.monsterId]
+  const offensive = (m.skills ?? [])
+    .map((id) => SKILLS[id])
+    .filter((s) => s && !s.heal)
+  if (offensive.length === 0) {
+    return bossBasicAttack(player, combat, messages, name)
+  }
+  const skill = offensive[Math.floor(Math.random() * offensive.length)]!
+  const power = skill.power ?? 1
+  const bonus = skill.bonus ?? 0
+  const atk = Math.floor(m.atk * power) + bonus
+  let dmg = calcDamage(atk, getTotalDef(player), 0.12)
+  if (combat.playerDefending) {
+    dmg = Math.max(1, Math.floor(dmg * 0.5))
+    messages.push(
+      t('combat.bossSkillGuard', {
+        name,
+        skill: skillLabel(skill.id),
+        dmg,
+      }),
+    )
+  } else {
+    messages.push(
+      t('combat.bossSkill', {
+        name,
+        skill: skillLabel(skill.id),
+        dmg,
+      }),
+    )
+  }
+  player.hp = Math.max(0, player.hp - dmg)
+  messages.push(t('combat.yourHp', { hp: player.hp, max: getEffectiveMaxHp(player) }))
+  combat.playerDefending = false
+  if (player.hp <= 0) return finishDefeat(player, messages)
+  return { messages, ended: false }
+}
+
+function bossBasicAttack(
+  player: PlayerState,
+  combat: CombatState,
+  messages: string[],
+  name: string,
+): CombatResult {
+  const m = MONSTERS[combat.monsterId]
   let dmg = calcDamage(m.atk, getTotalDef(player))
   if (combat.playerDefending) {
     dmg = Math.max(1, Math.floor(dmg * 0.5))
@@ -279,8 +334,10 @@ function finishVictory(
 
   const gold = randInt(m.goldMin, m.goldMax)
   player.gold += gold
-  player.exp += m.exp
-  messages.push(t('combat.reward', { exp: m.exp, gold }))
+  // ±15% variance so grind rewards feel random
+  const expGain = Math.max(1, Math.floor(m.exp * (0.85 + Math.random() * 0.3)))
+  player.exp += expGain
+  messages.push(t('combat.reward', { exp: expGain, gold }))
 
   if (Math.random() < m.dropChance && m.dropIds.length) {
     const dropId = m.dropIds[Math.floor(Math.random() * m.dropIds.length)]

@@ -98,6 +98,11 @@ export type CombatState = {
   monsterHp: number
   monsterMaxHp: number
   playerDefending: boolean
+  /**
+   * Boss telegraphed a lethal blow — resolves next enemy turn.
+   * Player must defend or die.
+   */
+  pendingLethal?: boolean
   turn: 'player' | 'enemy'
   log: string[]
 }
@@ -152,6 +157,8 @@ export type GameState = {
   mode: GameMode
   combat: CombatState | null
   townSocial: TownSocialState | null
+  /** Hunting-zone auto battle loop (stops on death or user stop) */
+  autoHunt: boolean
   history: string[]
   messages: TerminalLine[]
 }

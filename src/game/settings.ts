@@ -48,7 +48,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   showInspector: true,
   showHud: true,
   compactExplorer: false,
-  combatHints: true,
+  combatHints: false,
   fastMode: false,
 }
 

@@ -140,58 +140,59 @@ const EN: Dict = {
   'help.body': `available commands
 ────────────────────────
 [travel]
-  go <zone>       enter a hunting zone (e.g. go mistwood)
+  go <zone>       enter a hunting zone
   hunt / explore  search current zone
-  boss / challenge  fight region boss (apex zones)
-  lookaround      see who is in town (random each time)
-  talk <name>     talk (1 chat / lookaround, 2 turns) then 1|2|3
+  auto / autohunt auto-hunt (stop to cancel)
+  boss / challenge  challenge the zone boss
+  lookaround      see who is around in town
+  talk <name>     talk to someone
   npcs            same as lookaround
   town / cd ~     return to town
   shop            enter shop
-  rest            full HP/MP recover (town only)
+  rest            recover HP/MP (town)
 
 [status]
   status / st     stats + equipment
   inv / inventory inventory
-  skills          known skills
+  skills          skills
   look / ls       current location
-  zones           list hunting zones
-  name / rename   change nickname (once per local day)
+  zones           hunting zones
+  name / rename   change nickname
 
 [items]
-  equip <name>    equip gear
-  unequip <slot>  unequip slot
+  equip <name>    equip
+  unequip <slot>  unequip
   use <name>      use consumable
-  buy <name|#>    buy from shop (name or catalog #)
-  sell <name> [n] sell item (default qty 1)
+  buy <name|#>    buy
+  sell <name> [n] sell
   shop list       shop catalog
 
-[combat] (in battle only)
-  attack / a      basic attack
-  skill <name>    cast skill
-  defend / d      guard
-  use <potion>    use consumable
-  flee            run away
+[combat]
+  attack / a      attack
+  skill <name>    skill
+  defend / d      defend
+  use <potion>    use item
+  flee            flee
 
 [system]
   help            this help
-  save / load     save or load game
-  lang <en|ko>    language (commands stay English)
-  settings        open settings UI
+  save / load     save / load
+  lang <en|ko>    language
+  settings        settings
   theme <mode>    dark | light
-  fontsize <n>    terminal font size
+  fontsize <n>    font size
   inspector on|off
   hud on|off
   explorer compact|normal
   hints on|off
-  fast on|off     faster message pacing (default: off = slower)
-  autosave [min]  autosave interval (1-60)
+  fast on|off     message pacing
+  autosave [min]  autosave (1-60)
   clear / cls     clear screen
-  history         command history
-  reset           new game (keeps save file)`,
+  history         history
+  reset           new game`,
 
   'welcome.title': 'DevQuest — Terminal RPG',
-  'welcome.hint': 'start: go mistwood → hunt → eldergrove boss  (or tap chips)',
+  'welcome.hint': 'type help — or tap a chip below',
   'welcome.lang': 'language: tap 한국어 / English below',
   'welcome.save': 'save found — type load to continue.',
 
@@ -238,7 +239,7 @@ const EN: Dict = {
   'err.usage.hints': 'usage: hints on | off',
   'err.usage.explorer': 'usage: explorer compact | normal',
   'err.usage.lang': 'usage: lang en | lang ko',
-  'err.usage.name': 'usage: name <new>  (2-12 chars, no spaces, once per day)',
+  'err.usage.name': 'usage: name <new>',
   'err.nameInvalid': 'error: nickname must be 2-12 characters with no spaces',
   'err.nameDailyLimit': 'error: nickname already changed today — try again tomorrow',
   'err.nameSame': 'error: that is already your nickname',
@@ -254,20 +255,21 @@ const EN: Dict = {
   'ok.loaded': 'save loaded.',
   'ok.welcomeBack': 'welcome, {name}. pwd: {loc}',
   'ok.newGame': 'new game started. (save file kept — overwrite with save)',
-  'ok.adminTest': 'admin test loadout applied. (not saved until you type save)',
-  'ok.adminTestHint': 'Lv.19 · gates open · peak gear · go peakruin → boss  |  or go saltshore / foothill',
-  'ok.town': 'moved to town. try: lookaround | shop | rest | go mistwood',
+  'ok.adminTest': 'admin demo loadout applied. (not saved until you type save)',
+  'ok.adminTestHint':
+    'DEMO ~45s: status → 둘러보기 → talk → 1/2 → go 고목숲 → hunt → skill bash → town',
+  'ok.town': 'moved to town.',
   'ok.townShort': 'moved to town.',
   'ok.talkHint': 'usage: talk <name>  (someone from lookaround)',
   'ok.rest': 'rested. HP {hp}/{maxHp} | MP {mp}/{maxMp}',
   'ok.restAlready': 'already at full HP/MP.',
   'ok.shopEnter': 'entered shop.',
   'ok.arrived': 'arrived: {zone} — {desc}',
-    'ok.bossHint': 'hint: type boss to challenge the region guardian',
-'ok.huntHint': 'hint: type hunt (or explore) to search',
+    'ok.bossHint': '',
+'ok.huntHint': '',
   'ok.bought': 'bought {item} -{price}G (balance {gold}G)',
   'ok.sold': 'sold {item} x{qty} +{total}G (unit {unit}G, balance {gold}G)',
-  'ok.victory': 'victory. continue with hunt',
+  'ok.victory': 'victory.',
   'ok.fled': 'left combat.',
   'ok.settingsOpen': 'opened settings UI (close: settings close)',
   'ok.settingsClose': 'closed settings. back to terminal.',
@@ -282,8 +284,18 @@ const EN: Dict = {
   'ok.explorer': 'explorer: {mode}',
   'ok.lang': 'language set to {lang}',
   'ok.name': 'nickname set: {name}',
-  'info.name': 'nickname: {name}\nusage: name <new>  (once per day)',
+  'info.name': 'nickname: {name}',
   'ok.fast': 'fast mode {state}',
+  'ok.autoStart': 'auto-hunt started',
+  'ok.autoHint': 'type stop to cancel',
+  'ok.autoAlready': 'auto-hunt already running (stop to cancel)',
+  'ok.autoStopManual': 'auto-hunt stopped',
+  'ok.autoStopDeath': 'auto-hunt stopped — you were defeated',
+  'err.autoZoneOnly': 'error: auto-hunt only in a hunting zone',
+  'err.autoNoBoss': 'error: auto-hunt cannot run in boss fights',
+  'err.autoNotRunning': 'error: auto-hunt is not running',
+  'err.autoBusy': 'error: auto-hunting — type stop to cancel',
+  'ui.autoPlaceholder': 'auto-hunt… type stop',
   'ok.lootItem': 'found item: {item}',
   'ok.lootGold': 'found gold pouch: +{gold}G (wallet {total}G)',
 
@@ -295,7 +307,7 @@ const EN: Dict = {
   'combat.attack': 'attack -> {name} took {dmg} dmg. (HP {hp}/{max})',
   'combat.skillDmg': '{skill}! {name} took {dmg} dmg. (MP -{mp}, HP {hp}/{max})',
   'combat.skillHeal': '{skill}! HP {before} -> {after} (MP -{mp})',
-  'combat.defend': 'defend: incoming damage halved this turn',
+  'combat.defend': 'you brace for the next hit',
   'combat.fleeOk': 'flee: success',
     'combat.fleeFailBoss': 'flee: failed (boss blocks escape)',
 'combat.fleeFail': 'flee: failed',
@@ -303,13 +315,17 @@ const EN: Dict = {
     'combat.bossSkill': '{name} casts {skill}! you take {dmg}',
   'combat.bossSkillGuard': '(guard) {name} casts {skill}! you take {dmg}',
   'combat.bossHeal': '{name} uses {skill}! healed {heal} (HP {hp}/{max})',
+  'combat.bossRegen': '{name} recovers! +{heal} HP (HP {hp}/{max})',
+  'combat.lethalWarn': '⚠ {name} is winding up a finishing blow…',
+  'combat.lethalBlocked': 'you guard just in time! {name}\'s finishing blow is blocked',
+  'combat.lethalHit': '{name} lands the finishing blow. you are slain.',
   'combat.bossUnlockSea': 'SEA region unlocked — go saltshore',
   'combat.bossUnlockMountain': 'MOUNTAIN region unlocked — go foothill',
   'combat.bossClearPeak': 'Tyrant fallen. The summit is yours.',
   'combat.bossRechallenge': 'boss already cleared — gate stays open',
 'combat.hit': '{name} hits for {dmg}',
   'combat.yourHp': 'your HP {hp}/{max}',
-  'combat.dead': 'you were defeated... respawning in town (lost 20% gold)',
+  'combat.dead': 'you were defeated... waking up in town',
   'combat.deadGold': 'gold -{loss}G -> {gold}G | cd ~/town',
   'combat.deadVitals': 'respawn vitals: HP {hp}/{maxHp} | MP {mp}/{maxMp}',
   'combat.win': '{name} defeated',
@@ -330,7 +346,7 @@ const EN: Dict = {
   'player.errSlot': 'error: invalid slot (helmet|armor|legs|boots|gloves|weapon|ring|necklace)',
   'player.errEmptySlot': 'error: nothing equipped in that slot',
   'player.unequipped': 'unequipped {item}',
-  'player.skillUnlock': 'skill unlocked: {skill}',
+  'player.skillUnlock': 'skill unlocked: {skill} — {effect}',
   'player.levelUp': 'level up! Lv.{level} | ATK {atk} / DEF {def} | HP/MP restored',
 
   'info.autosave': 'autosave: every {min} min (default {def}, range {lo}-{hi})\nusage: autosave <minutes>',
@@ -358,30 +374,30 @@ const EN: Dict = {
   'skills.line': '  {name} (MP {mp}) — {desc}',
   'skills.locked': '-- locked --',
   'skills.lockedLine': '  {name} (Lv.{level}+)',
-  'look.town': 'town — safe hub.\n  lookaround | talk <name> | shop | rest | go mistwood',
-  'look.shop': 'shop — buy <name|#> / sell / shop list.\n  lookaround | town to leave.',
-  'look.bossHint': '  boss — challenge the region guardian',
-  'look.zone': '{zone} — {desc}\n  hunt to search | town to return',
+  'look.town': 'town — quiet streets and familiar faces.',
+  'look.shop': 'shop — shelves of gear and potions.',
+  'look.bossHint': '',
+  'look.zone': '{zone} — {desc}',
   'look.pwd': 'pwd: {loc}',
   'npc.lookHead': 'people around town (this visit)',
   'npc.lookLine': '  {name} — {title}  |  affinity Lv.{stage} ({score})',
-  'npc.lookFoot': 'talk <name> once, then reply with 1 | 2 | 3',
+  'npc.lookFoot': 'talk <name>',
   'npc.chooseHead': 'choose your reply:',
   'npc.choiceLine': '  {n}. {text}',
-  'npc.chooseFoot': 'type 1 / 2 / 3 — or paste the reply text',
+  'npc.chooseFoot': '1 / 2 / 3',
   'npc.youSaid': 'you: {text}',
   'npc.reactGood': '{name} seems pleased. (affinity +{delta})',
   'npc.reactOk': '{name} nods. (affinity +{delta})',
   'npc.reactBad': '{name} looks awkward. (affinity {delta})',
   'npc.reactFlat': '{name} stays quiet.',
-  'npc.affinityNow': '{name} affinity: {score} (stage {stage}/3)',
-  'npc.gift': 'gift from {name} (stage {stage})! {item} x{qty}',
-  'npc.talkDone': 'conversation over (2 turns). lookaround again to chat more.',
+  'npc.affinityNow': '{name} affinity: {score}',
+  'npc.gift': 'gift from {name}! {item} x{qty}',
+  'npc.talkDone': 'conversation over.',
   'zones.head': 'zones',
   'zones.line': '  [{ok}] {name}  (Lv.{level}+) — {desc}',
   'zones.ok': 'ok',
     'zones.needBoss': '  [need: {boss}]',
-  'zones.bossAvail': '  [boss ready]',
+  'zones.bossAvail': '',
   'zones.bossDone': '  [boss cleared]',
 'zones.locked': 'locked',
   'shop.head1': 'shop catalog (sellback ~= 1/3 of list price)',
@@ -448,7 +464,7 @@ const EN: Dict = {
   'ui.showHud': 'Show HUD',
   'ui.showHudDesc': 'Top status strip (HP / MP / EXP)',
   'ui.combatHints': 'Combat Hints',
-  'ui.combatHintsDesc': 'Print combat command hints when a battle starts',
+  'ui.combatHintsDesc': 'Show command list when battle starts',
   'ui.fastMode': 'Fast Mode',
   'ui.fastModeDesc': 'Quicker message pacing (off = slower, more dramatic)',
   'ui.fontSize': 'Font Size',
@@ -463,58 +479,59 @@ const KO: Dict = {
   'help.body': `사용 가능 명령어
 ────────────────────────
 [이동]
-  go <장소>       사냥터 이동 (예: go 안개숲)
-  hunt / explore  현재 사냥터 탐색
-  boss / challenge  지역 보스 도전 (상한 존)
-  둘러보기        마을에 있는 사람 (매번 랜덤)  ※ lookaround 도 가능
-  talk <이름>     대화 (둘러보기당 1번·2턴) 후 1|2|3
+  go <장소>       사냥터 이동
+  hunt / explore  사냥터 탐색
+  auto / 자동전투 자동전투 (stop 으로 종료)
+  boss / challenge  보스 도전
+  둘러보기        마을 사람들 보기
+  talk <이름>     대화
   npcs            둘러보기와 동일
-  town / cd ~     마을로 이동
-  shop            상점 입장
-  rest            HP/MP 풀 회복 (마을에서만)
+  town / cd ~     마을로
+  shop            상점
+  rest            휴식 (마을)
 
 [상태]
-  status / st     능력치·장비 확인
+  status / st     능력치·장비
   inv / inventory 인벤토리
-  skills          보유 스킬
+  skills          스킬
   look / ls       현재 위치
   zones           사냥터 목록
-  name / 닉네임   닉네임 변경 (로컬 날짜 기준 하루 1회)
+  name / 닉네임   닉네임 변경
 
 [아이템]
-  equip <name>    장비 장착
-  unequip <slot>  장비 해제
+  equip <name>    장착
+  unequip <slot>  해제
   use <name>      소모품 사용
-  buy <name|#>    상점 구매 (이름 또는 번호)
-  sell <name> [n] 판매 (기본 1개)
+  buy <name|#>    구매
+  sell <name> [n] 판매
   shop list       상점 목록
 
-[전투] (전투 중)
-  attack / a      기본 공격
+[전투]
+  attack / a      공격
   skill <name>    스킬
   defend / d      방어
-  use <potion>    소모품
+  use <potion>    아이템
   flee            도망
 
 [시스템]
   help            이 도움말
   save / load     저장 / 불러오기
-  lang <en|ko>    언어 변경 (장소·둘러보기 등은 언어에 맞춤)
-  settings        설정 화면
+  lang <en|ko>    언어
+  settings        설정
   theme <mode>    dark | light
-  fontsize <n>    터미널 글자 크기
+  fontsize <n>    글자 크기
   inspector on|off
   hud on|off
   explorer compact|normal
   hints on|off
-  fast on|off     메시지 출력 빠르게 (기본 off = 천천히)
-  autosave [min]  자동저장 간격 (1-60분)
+  fast on|off     메시지 속도
+  autosave [min]  자동저장 (1-60분)
   clear / cls     화면 지우기
   history         명령 기록
-  reset           새 게임 (세이브 파일 유지)`,
+  reset           새 게임`,
 
   'welcome.title': 'DevQuest — Terminal RPG',
-  'welcome.hint': '시작: go 안개숲 → hunt → 고목숲 에서 boss',
+  'welcome.hint': 'help 입력 — 또는 아래 칩을 눌러 보세요',
   'welcome.lang': '언어: 아래 칩에서 한국어 / English 선택',
   'welcome.save': '저장 데이터 있음 — load 로 이어하기',
 
@@ -561,7 +578,7 @@ const KO: Dict = {
   'err.usage.hints': 'usage: hints on | off',
   'err.usage.explorer': 'usage: explorer compact | normal',
   'err.usage.lang': 'usage: lang en | lang ko',
-  'err.usage.name': 'usage: name <새이름>  (2~12자, 공백 불가, 하루 1회)',
+  'err.usage.name': 'usage: name <새이름>',
   'err.nameInvalid': 'error: 닉네임은 공백 없이 2~12자여야 합니다',
   'err.nameDailyLimit': 'error: 오늘은 이미 닉네임을 변경했습니다 — 내일 다시 시도하세요',
   'err.nameSame': 'error: 이미 같은 닉네임입니다',
@@ -577,20 +594,21 @@ const KO: Dict = {
   'ok.loaded': '저장 데이터를 불러왔습니다.',
   'ok.welcomeBack': '환영합니다, {name}. 위치: {loc}',
   'ok.newGame': '새 게임을 시작합니다. (세이브 파일 유지 — 덮어쓰려면 save)',
-  'ok.adminTest': '어드민 테스트 로드아웃 적용. (save 하기 전까지 저장 안 됨)',
-  'ok.adminTestHint': 'Lv.19 · 게이트 개방 · 정상급 장비 · go 정상폐허 → boss  |  go 소금해안 / 산기슭',
-  'ok.town': '마을로 이동. 둘러보기 | shop | rest | go 안개숲',
+  'ok.adminTest': '데모용 테스트 로드아웃 적용. (save 하기 전까지 저장 안 됨)',
+  'ok.adminTestHint':
+    '데모 ~45초: status → 둘러보기 → talk → 1/2 → go 고목숲 → hunt → skill bash → town',
+  'ok.town': '마을로 이동했습니다.',
   'ok.townShort': '마을로 이동했습니다.',
   'ok.talkHint': 'usage: talk <이름>  (둘러보기 목록에 있는 사람)',
   'ok.rest': '휴식 완료. HP {hp}/{maxHp} | MP {mp}/{maxMp}',
   'ok.restAlready': '이미 HP/MP가 가득입니다.',
   'ok.shopEnter': '상점에 입장했습니다.',
   'ok.arrived': '도착: {zone} — {desc}',
-    'ok.bossHint': '힌트: boss 로 지역 수호자에게 도전',
-'ok.huntHint': '탐색하려면 hunt (또는 explore)',
+    'ok.bossHint': '',
+'ok.huntHint': '',
   'ok.bought': '{item} 구매 -{price}G (잔액 {gold}G)',
   'ok.sold': '{item} x{qty} 판매 +{total}G (단가 {unit}G, 잔액 {gold}G)',
-  'ok.victory': '전투 승리! 계속하려면 hunt',
+  'ok.victory': '전투 승리!',
   'ok.fled': '전투에서 벗어났습니다.',
   'ok.settingsOpen': '설정 화면을 열었습니다 (닫기: settings close)',
   'ok.settingsClose': '설정 닫음. 터미널로 복귀.',
@@ -605,8 +623,18 @@ const KO: Dict = {
   'ok.explorer': 'explorer: {mode}',
   'ok.lang': '언어: {lang}',
   'ok.name': '닉네임 변경: {name}',
-  'info.name': '닉네임: {name}\nusage: name <새이름>  (하루 1회)',
+  'info.name': '닉네임: {name}',
   'ok.fast': '빠른 모드 {state}',
+  'ok.autoStart': '자동전투 시작',
+  'ok.autoHint': '끝내려면 stop',
+  'ok.autoAlready': '이미 자동전투 중 (stop 으로 종료)',
+  'ok.autoStopManual': '자동전투 종료',
+  'ok.autoStopDeath': '자동전투 종료 — 전투에서 패배',
+  'err.autoZoneOnly': 'error: 사냥터에서만 자동전투 가능',
+  'err.autoNoBoss': 'error: 보스전에서는 자동전투 불가',
+  'err.autoNotRunning': 'error: 자동전투가 실행 중이 아닙니다',
+  'err.autoBusy': 'error: 자동전투 중 — 끝내려면 stop',
+  'ui.autoPlaceholder': '자동전투 중… stop 입력',
   'ok.lootItem': '아이템 획득: {item}',
   'ok.lootGold': '골드 획득: +{gold}G (보유 {total}G)',
 
@@ -618,7 +646,7 @@ const KO: Dict = {
   'combat.attack': '공격 -> {name}에게 {dmg} 피해. (HP {hp}/{max})',
   'combat.skillDmg': '{skill}! {name}에게 {dmg} 피해. (MP -{mp}, HP {hp}/{max})',
   'combat.skillHeal': '{skill}! HP {before} -> {after} (MP -{mp})',
-  'combat.defend': '방어: 이번 적 공격 피해 절반',
+  'combat.defend': '자세를 낮춰 다음 공격을 대비한다',
   'combat.fleeOk': '도망 성공',
     'combat.fleeFailBoss': '도망 실패 (보스가 길을 막음)',
 'combat.fleeFail': '도망 실패',
@@ -626,13 +654,17 @@ const KO: Dict = {
     'combat.bossSkill': '{name}의 {skill}! {dmg} 피해',
   'combat.bossSkillGuard': '(방어) {name}의 {skill}! {dmg} 피해',
   'combat.bossHeal': '{name}의 {skill}! {heal} 회복 (HP {hp}/{max})',
+  'combat.bossRegen': '{name}이(가) 체력을 회복한다! +{heal} (HP {hp}/{max})',
+  'combat.lethalWarn': '⚠ {name}이(가) 최후의 일격을 준비 중이다…',
+  'combat.lethalBlocked': '간신히 막아냈다! {name}의 최후 일격이 빗나간다',
+  'combat.lethalHit': '{name}의 최후 일격이 꽂힌다. 쓰러졌다.',
   'combat.bossUnlockSea': '바다 지역 해금 — go saltshore',
   'combat.bossUnlockMountain': '산 지역 해금 — go foothill',
   'combat.bossClearPeak': '타이런트를 쓰러뜨렸다. 정상이 열렸다.',
   'combat.bossRechallenge': '이미 클리어한 보스 — 게이트는 열린 상태',
 'combat.hit': '{name}의 공격 {dmg}',
   'combat.yourHp': '내 HP {hp}/{max}',
-  'combat.dead': '쓰러졌습니다... 마을에서 부활 (골드 20% 손실)',
+  'combat.dead': '쓰러졌습니다... 마을에서 눈을 뜹니다',
   'combat.deadGold': '골드 -{loss}G -> {gold}G | 마을로 이동',
   'combat.deadVitals': '부활 상태: HP {hp}/{maxHp} | MP {mp}/{maxMp}',
   'combat.win': '{name} 처치',
@@ -653,7 +685,7 @@ const KO: Dict = {
   'player.errSlot': 'error: 잘못된 부위 (helmet|armor|legs|boots|gloves|weapon|ring|necklace)',
   'player.errEmptySlot': 'error: 해당 부위에 장비가 없습니다',
   'player.unequipped': '{item} 해제',
-  'player.skillUnlock': '스킬 해금: {skill}',
+  'player.skillUnlock': '스킬 해금: {skill} — {effect}',
   'player.levelUp': '레벨 업! Lv.{level} | ATK {atk} / DEF {def} | HP/MP 회복',
 
   'info.autosave': '자동저장: {min}분마다 (기본 {def}, 범위 {lo}-{hi})\nusage: autosave <minutes>',
@@ -681,30 +713,30 @@ const KO: Dict = {
   'skills.line': '  {name} (MP {mp}) — {desc}',
   'skills.locked': '-- 미해금 --',
   'skills.lockedLine': '  {name} (Lv.{level}+)',
-  'look.town': '마을 — 안전한 거점.\n  둘러보기 | talk <이름> | shop | rest | go 안개숲',
-  'look.shop': '상점 — buy <이름|#> / sell / shop list.\n  둘러보기 | town 으로 나가기.',
-  'look.bossHint': '  boss — 지역 수호자에게 도전',
-  'look.zone': '{zone} — {desc}\n  hunt 로 탐색 | town 으로 귀환',
+  'look.town': '마을 — 익숙한 거리와 사람들.',
+  'look.shop': '상점 — 장비와 포션이 진열되어 있다.',
+  'look.bossHint': '',
+  'look.zone': '{zone} — {desc}',
   'look.pwd': '위치: {loc}',
   'npc.lookHead': '지금 마을에 있는 사람들',
   'npc.lookLine': '  {name} — {title}  |  호감 Lv.{stage} ({score})',
-  'npc.lookFoot': 'talk <이름> 한 번 → 답변은 1 | 2 | 3',
+  'npc.lookFoot': 'talk <이름>',
   'npc.chooseHead': '답변을 고르세요:',
   'npc.choiceLine': '  {n}. {text}',
-  'npc.chooseFoot': '1 / 2 / 3 또는 선택지 내용 입력',
+  'npc.chooseFoot': '1 / 2 / 3',
   'npc.youSaid': '나: {text}',
   'npc.reactGood': '{name} 표정이 밝아졌어요. (호감 +{delta})',
   'npc.reactOk': '{name} 이(가) 고개를 끄덕입니다. (호감 +{delta})',
   'npc.reactBad': '{name} 분위기가 어색해졌어요. (호감 {delta})',
   'npc.reactFlat': '{name} 반응이 덤덤합니다.',
-  'npc.affinityNow': '{name} 호감도: {score} (단계 {stage}/3)',
-  'npc.gift': '{name} 의 선물 (호감 {stage}단계)! {item} x{qty}',
-  'npc.talkDone': '대화 종료 (2턴). 다시 대화하려면 둘러보기',
+  'npc.affinityNow': '{name} 호감도: {score}',
+  'npc.gift': '{name}의 선물! {item} x{qty}',
+  'npc.talkDone': '대화가 끝났다.',
   'zones.head': '사냥터',
   'zones.line': '  [{ok}] {name}  (Lv.{level}+) — {desc}',
   'zones.ok': '가능',
     'zones.needBoss': '  [필요: {boss}]',
-  'zones.bossAvail': '  [보스 가능]',
+  'zones.bossAvail': '',
   'zones.bossDone': '  [보스 클리어]',
 'zones.locked': '잠김',
   'shop.head1': '상점 목록 (판매가 ≈ 정가의 1/3)',
@@ -771,7 +803,7 @@ const KO: Dict = {
   'ui.showHud': 'HUD 표시',
   'ui.showHudDesc': '상단 HP/MP/EXP 바',
   'ui.combatHints': '전투 힌트',
-  'ui.combatHintsDesc': '전투 시작 시 명령 안내 출력',
+  'ui.combatHintsDesc': '전투 시작 시 명령 목록 표시',
   'ui.fastMode': '빠른 모드',
   'ui.fastModeDesc': '메시지 출력을 빠르게 (끄면 기본 천천히)',
   'ui.fontSize': '글자 크기',
@@ -850,13 +882,13 @@ export function zoneDesc(id: string): string {
     const map: Record<string, string> = {
       mistwood: '안개 낀 숲 외곽. 초보용. (권장 Lv.1+)',
       thornpath: '가시덤불 길. 위협이 커진다. (권장 Lv.3+)',
-      eldergrove: '고목이 우거진 숲. 숲 상한 — boss 로 도전. (권장 Lv.5+)',
+      eldergrove: '고목이 우거진 숲. (권장 Lv.5+)',
       saltshore: '소금 냄새 나는 해변. 바다 입문. (권장 Lv.7+)',
       tidewreck: '조수에 잠긴 난파만. (권장 Lv.9+)',
-      abysscove: '깊은 만. 바다 상한 — boss 로 도전. (권장 Lv.11+)',
+      abysscove: '깊은 만. 물살이 무겁다. (권장 Lv.11+)',
       foothill: '바위 산기슭. 산 입문. (권장 Lv.13+)',
       frostpass: '바람 부는 서리고개. (권장 Lv.15+)',
-      peakruin: '정상 폐허. 산 상한 — boss 로 도전. (권장 Lv.17+)',
+      peakruin: '정상 폐허. 공기가 얇다. (권장 Lv.17+)',
     }
     return map[id] ?? z.description
   }
@@ -875,16 +907,40 @@ export function skillDesc(id: string): string {
   if (!s) return ''
   if (currentLang === 'ko') {
     const map: Record<string, string> = {
-      slash: '강한 일격. 공격력 160% 피해. (MP 5)',
-      focus: '집중 공격. 공격력 130% + 4 피해. (MP 8)',
-      mend: '상처 회복. HP 35 회복. (MP 10)',
-      bash: '강력한 강타. 공격력 200% 피해. (MP 12)',
-      tide_cut: '파도 베기. 공격력 185% + 6. (MP 14)',
-      avalanche: '산사태. 공격력 230% 피해. (MP 18)',
+      slash: '강한 일격. (MP 5)',
+      focus: '집중 공격. (MP 8)',
+      mend: '상처 회복. (MP 10)',
+      bash: '강력한 강타. (MP 12)',
+      tide_cut: '파도 베기. (MP 14)',
+      avalanche: '산사태. (MP 18)',
     }
     return map[id] ?? s.description
   }
   return s.description
+}
+
+/** Full effect text shown once when a skill is unlocked. */
+export function skillEffectDesc(id: string): string {
+  if (currentLang === 'ko') {
+    const map: Record<string, string> = {
+      slash: '공격력 160% 피해 (MP 5)',
+      focus: '공격력 130% + 4 피해 (MP 8)',
+      mend: 'HP 35 회복 (MP 10)',
+      bash: '공격력 200% 피해 (MP 12)',
+      tide_cut: '공격력 185% + 6 피해 (MP 14)',
+      avalanche: '공격력 230% 피해 (MP 18)',
+    }
+    return map[id] ?? skillDesc(id)
+  }
+  const map: Record<string, string> = {
+    slash: '160% ATK damage (MP 5)',
+    focus: '130% ATK + 4 damage (MP 8)',
+    mend: 'heal 35 HP (MP 10)',
+    bash: '200% ATK damage (MP 12)',
+    tide_cut: '185% ATK + 6 damage (MP 14)',
+    avalanche: '230% ATK damage (MP 18)',
+  }
+  return map[id] ?? skillDesc(id)
 }
 
 export function slotLabel(slot: EquipSlot): string {

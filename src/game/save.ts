@@ -16,6 +16,7 @@ export function createInitialState(): GameState {
     mode: 'idle',
     combat: null,
     townSocial: null,
+    autoHunt: false,
     history: [],
     messages: [],
   }
@@ -74,6 +75,7 @@ export function loadGame(): GameState | null {
     state.mode = 'idle'
     state.combat = null
     state.townSocial = null
+    state.autoHunt = false
     return state
   } catch {
     return null

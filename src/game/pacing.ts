@@ -11,10 +11,18 @@ export type PaceKind =
 
 /** Current timings = fast mode. Normal is slower. */
 const NORMAL_SCALE = 1.9
+/** Auto-hunt ignores fast mode and runs a bit slower than normal. */
+const AUTO_HUNT_SCALE = NORMAL_SCALE * 1.25
 
 function applyPace(ms: number): number {
   if (ms <= 0) return 0
   return getSettings().fastMode ? ms : Math.round(ms * NORMAL_SCALE)
+}
+
+/** Dedicated pacing for auto-hunt (never uses fast mode). */
+export function applyAutoHuntPace(ms: number): number {
+  if (ms <= 0) return 0
+  return Math.round(ms * AUTO_HUNT_SCALE)
 }
 
 export function classifyCommand(raw: string): PaceKind {
@@ -74,7 +82,20 @@ export function classifyCommand(raw: string): PaceKind {
   ) {
     return 'quick'
   }
-  if (cmd === 'hunt' || cmd === 'explore' || cmd === 'search') return 'search'
+  if (
+    cmd === 'hunt' ||
+    cmd === 'explore' ||
+    cmd === 'search' ||
+    cmd === 'auto' ||
+    cmd === 'autohunt' ||
+    cmd === '자동전투' ||
+    cmd === 'stop' ||
+    cmd === '중지'
+  ) {
+    return cmd === 'auto' || cmd === 'autohunt' || cmd === '자동전투' || cmd === 'stop' || cmd === '중지'
+      ? 'quick'
+      : 'search'
+  }
   if (cmd === 'boss' || cmd === 'challenge') return 'search'
   if (
     cmd === 'attack' ||
@@ -126,33 +147,30 @@ export function classifyCommand(raw: string): PaceKind {
 }
 
 /** Pause after echoing the input line, before first result. (fast baseline) */
-export function leadDelay(kind: PaceKind, inCombat: boolean): number {
-  let ms = 0
-  if (inCombat && (kind === 'combat' || kind === 'action')) ms = 320
-  else {
-    switch (kind) {
-      case 'instant':
-        ms = 40
-        break
-      case 'quick':
-        ms = 90
-        break
-      case 'action':
-        ms = 220
-        break
-      case 'search':
-        ms = 520
-        break
-      case 'combat':
-        ms = 300
-        break
-    }
+export function leadDelayBaseline(kind: PaceKind, inCombat: boolean): number {
+  if (inCombat && (kind === 'combat' || kind === 'action')) return 320
+  switch (kind) {
+    case 'instant':
+      return 40
+    case 'quick':
+      return 90
+    case 'action':
+      return 220
+    case 'search':
+      return 520
+    case 'combat':
+      return 300
+    default:
+      return 220
   }
-  return applyPace(ms)
+}
+
+export function leadDelay(kind: PaceKind, inCombat: boolean): number {
+  return applyPace(leadDelayBaseline(kind, inCombat))
 }
 
 /** Gap before revealing each result line. (fast baseline) */
-export function lineDelay(
+export function lineDelayBaseline(
   kind: PaceKind,
   msg: TerminalLine,
   index: number,
@@ -160,32 +178,40 @@ export function lineDelay(
 ): number {
   if (msg.kind === 'input') return 0
 
-  let ms = 0
-  if (msg.kind === 'error') ms = 60
-  else if (kind === 'instant') {
-    ms = index === 0 ? 30 : 18
-  } else if (kind === 'quick') {
-    ms = msg.kind === 'success' ? 120 : 70
-  } else if (kind === 'search') {
-    if (msg.kind === 'combat') ms = 380
-    else if (msg.kind === 'loot') ms = 420
-    else if (msg.kind === 'system') ms = 220
-    else ms = 280
-  } else if (kind === 'combat' || (inCombat && kind === 'action')) {
-    if (msg.kind === 'combat') ms = 480
-    else if (msg.kind === 'success') ms = 360
-    else if (msg.kind === 'loot') ms = 400
-    else if (msg.kind === 'system') ms = 260
-    else ms = 300
-  } else {
-    // action (travel, shop, equip…)
-    if (msg.kind === 'success') ms = 240
-    else if (msg.kind === 'loot') ms = 360
-    else if (msg.kind === 'output') ms = 140
-    else ms = 180
+  if (msg.kind === 'error') return 60
+  if (kind === 'instant') {
+    return index === 0 ? 30 : 18
   }
+  if (kind === 'quick') {
+    return msg.kind === 'success' ? 120 : 70
+  }
+  if (kind === 'search') {
+    if (msg.kind === 'combat') return 380
+    if (msg.kind === 'loot') return 420
+    if (msg.kind === 'system') return 220
+    return 280
+  }
+  if (kind === 'combat' || (inCombat && kind === 'action')) {
+    if (msg.kind === 'combat') return 480
+    if (msg.kind === 'success') return 360
+    if (msg.kind === 'loot') return 400
+    if (msg.kind === 'system') return 260
+    return 300
+  }
+  // action (travel, shop, equip…)
+  if (msg.kind === 'success') return 240
+  if (msg.kind === 'loot') return 360
+  if (msg.kind === 'output') return 140
+  return 180
+}
 
-  return applyPace(ms)
+export function lineDelay(
+  kind: PaceKind,
+  msg: TerminalLine,
+  index: number,
+  inCombat: boolean,
+): number {
+  return applyPace(lineDelayBaseline(kind, msg, index, inCombat))
 }
 
 export function sleep(ms: number): Promise<void> {

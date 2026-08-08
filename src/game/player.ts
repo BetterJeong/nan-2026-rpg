@@ -1,6 +1,6 @@
 import { ITEMS, getItem } from './data/items'
 import { SKILLS, expToNext } from './data/content'
-import { itemLabel, itemMatchesQuery, skillLabel, t } from './i18n'
+import { itemLabel, itemMatchesQuery, skillEffectDesc, skillLabel, t } from './i18n'
 import type { EquipSlot, InventoryEntry, PlayerState } from './types'
 import { SLOT_ORDER } from './types'
 
@@ -30,15 +30,15 @@ export function createNewPlayer(name = 'player'): PlayerState {
   }
 }
 
-/** Hidden admin fixture — strong loadout, all region gates open. */
+/** Hidden admin fixture — tuned for a ~45s demo recording flow. */
 export function createAdminTestPlayer(name = 'tester'): PlayerState {
-  const level = 19
+  const level = 5
   const gained = level - 1
   const player: PlayerState = {
     name,
     level,
-    exp: 0,
-    gold: 5000,
+    exp: 20,
+    gold: 420,
     hp: 50 + gained * 10,
     maxHp: 50 + gained * 10,
     mp: 30 + gained * 5,
@@ -46,39 +46,30 @@ export function createAdminTestPlayer(name = 'tester'): PlayerState {
     baseAtk: 5 + gained * 2,
     baseDef: 5 + gained * 1,
     inventory: [
-      { itemId: 'hp_potion_l', qty: 20 },
-      { itemId: 'mp_potion_l', qty: 20 },
-      { itemId: 'hp_potion_m', qty: 10 },
-      { itemId: 'mp_potion_m', qty: 10 },
-      { itemId: 'guardian_blade', qty: 1 },
-      { itemId: 'grove_mantle', qty: 1 },
-      { itemId: 'leviathan_fang', qty: 1 },
-      { itemId: 'abyss_mail', qty: 1 },
-      { itemId: 'tyrant_edge', qty: 1 },
-      { itemId: 'summit_aegis', qty: 1 },
-      { itemId: 'peak_helm', qty: 1 },
-      { itemId: 'granite_greaves', qty: 1 },
-      { itemId: 'frost_boots', qty: 1 },
-      { itemId: 'frost_gloves', qty: 1 },
-      { itemId: 'storm_ring', qty: 1 },
-      { itemId: 'peak_charm', qty: 1 },
+      { itemId: 'hp_potion_m', qty: 5 },
+      { itemId: 'mp_potion_m', qty: 5 },
+      { itemId: 'hp_potion_s', qty: 3 },
+      { itemId: 'mp_potion_s', qty: 3 },
+      { itemId: 'iron_blade', qty: 1 },
+      { itemId: 'leather_vest', qty: 1 },
     ],
     equipment: {
-      weapon: 'tyrant_edge',
-      armor: 'summit_aegis',
-      helmet: 'peak_helm',
-      legs: 'granite_greaves',
-      boots: 'frost_boots',
-      gloves: 'frost_gloves',
-      ring: 'storm_ring',
-      necklace: 'peak_charm',
+      weapon: 'hunter_blade',
+      armor: 'forest_cloak',
+      helmet: 'leather_hood',
+      legs: 'leather_pants',
+      boots: 'leather_boots',
+      gloves: 'leather_gloves',
+      ring: 'tin_ring',
+      necklace: 'amber_necklace',
     },
     location: 'town',
     skills: Object.values(SKILLS)
       .filter((s) => !s.hidden && s.unlockLevel <= level)
       .map((s) => s.id),
-    bossesDefeated: ['grove_guardian', 'tide_leviathan'],
-    npcAffinity: {},
+    bossesDefeated: [],
+    // Mild affinity so talk UI looks alive on first chat
+    npcAffinity: { mira: 12, bram: 8 },
     npcGiftStage: {},
     npcDialogueSeen: {},
   }
@@ -283,7 +274,12 @@ export function applyLevelUps(player: PlayerState): string[] {
       if (skill.hidden) continue
       if (skill.unlockLevel === player.level && !player.skills.includes(skill.id)) {
         player.skills.push(skill.id)
-        logs.push(t('player.skillUnlock', { skill: skillLabel(skill.id) }))
+        logs.push(
+          t('player.skillUnlock', {
+            skill: skillLabel(skill.id),
+            effect: skillEffectDesc(skill.id),
+          }),
+        )
       }
     }
 

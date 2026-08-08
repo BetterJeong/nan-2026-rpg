@@ -1,16 +1,29 @@
 import './style.css'
 import { ZONES, MONSTERS, SKILLS, hasDefeatedBoss, requiredBossForZone, getBossForZone } from './game/data/content'
 import { getItem } from './game/data/items'
-import { handleCommand, welcome, getHud, applyRename, canRenameToday } from './game/commands'
+import {
+  handleCommand,
+  welcome,
+  getHud,
+  applyRename,
+  canRenameToday,
+  applyCombatEnd,
+  performHunt,
+} from './game/commands'
+import { autoCombatTurn } from './game/autoHunt'
 import { getSuggestChips } from './game/suggest'
 import {
   classifyCommand,
   leadDelay,
   lineDelay,
+  leadDelayBaseline,
+  lineDelayBaseline,
+  applyAutoHuntPace,
   sleep,
   type PaceKind,
 } from './game/pacing'
 import type { TerminalLine } from './game/types'
+import { isErrorMsg } from './game/player'
 import {
   createInitialState,
   saveGame,
@@ -59,6 +72,8 @@ let inspectorOpen = false
 /** True while command results are being paced onto the terminal. */
 let commandBusy = false
 let paceToken = 0
+let autoHuntToken = 0
+let autoHuntRunning = false
 
 const app = document.querySelector<HTMLDivElement>('#app')!
 
@@ -176,9 +191,13 @@ function renderShell(): void {
     e.preventDefault()
   })
   document.querySelector('#cli-suggest')?.addEventListener('click', (e) => {
-    if (commandBusy) return
     const btn = (e.target as HTMLElement).closest('[data-cmd]') as HTMLElement | null
     if (!btn?.dataset.cmd) return
+    const chipCmd = btn.dataset.cmd.trim()
+    const chipFirst = chipCmd.split(/\s+/)[0]?.toLowerCase() ?? ''
+    const chipIsStop = chipFirst === 'stop' || chipFirst === '중지'
+    // Allow stop during auto even while messages are revealing
+    if (commandBusy && !(state.autoHunt && chipIsStop)) return
     e.preventDefault()
     // Mobile: keep dock flat (no keyboard). Desktop: keep CLI focused.
     if (isCoarsePointerMobile()) {
@@ -186,7 +205,7 @@ function renderShell(): void {
       cliEl?.blur()
       document.body.classList.remove('keyboard-open')
     }
-    runCommand(btn.dataset.cmd)
+    runCommand(chipCmd)
   })
 
   document.querySelector('#explorer')!.addEventListener('click', (e) => {
@@ -260,21 +279,46 @@ function onKeyDown(e: KeyboardEvent): void {
 function runCommand(raw: string): void {
   const line = raw.trim()
   if (!line) return
-  if (commandBusy) return
+
+  const first = line.split(/\s+/)[0]?.toLowerCase() ?? ''
+  const isStop =
+    first === 'stop' ||
+    first === '중지' ||
+    /^auto\s+(stop|off|end|중지)\b/i.test(line) ||
+    /^자동전투\s+(stop|off|end|중지)\b/i.test(line)
+
+  // While auto-hunting, only stop (and the auto command itself) may interrupt
+  if (commandBusy && !(state.autoHunt && isStop)) {
+    if (state.autoHunt) {
+      pushMessage(state, 'error', t('err.autoBusy'))
+      refresh()
+    }
+    return
+  }
+  if (autoHuntRunning && !isStop && first !== 'auto' && first !== 'autohunt' && first !== '자동전투') {
+    // Ignore other commands during auto except stop
+    pushMessage(state, 'error', t('err.autoBusy'))
+    refresh()
+    return
+  }
+
+  if (isStop && state.autoHunt) {
+    // Cancel loop immediately so awaits exit on next check
+    autoHuntToken += 1
+    autoHuntRunning = false
+  }
 
   const inCombatBefore = state.mode === 'combat'
   let pace: PaceKind = classifyCommand(line)
   if (inCombatBefore && pace === 'action') {
-    // potions / misc during battle should feel like combat turns
     const cmd = line.split(/\s+/)[0]?.toLowerCase()
     if (cmd === 'use') pace = 'combat'
   }
 
   const beforeLen = state.messages.length
-  handleCommand(state, line)
+  const result = handleCommand(state, line)
   const generated = state.messages.splice(beforeLen) as TerminalLine[]
 
-  // Instant path for clear — already wiped; just refresh
   const cmd = line.split(/\s+/)[0]?.toLowerCase()
   if (cmd === 'clear' || cmd === 'cls') {
     refresh()
@@ -282,39 +326,127 @@ function runCommand(raw: string): void {
     return
   }
 
-  void revealMessages(generated, pace, inCombatBefore || state.mode === 'combat')
+  void revealMessages(generated, pace, inCombatBefore || state.mode === 'combat').then(() => {
+    if (result.startAutoHunt && state.autoHunt && !autoHuntRunning) {
+      void runAutoHuntLoop()
+    }
+  })
 }
 
 async function revealMessages(
   lines: TerminalLine[],
   pace: PaceKind,
   inCombat: boolean,
+  opts?: { softBusy?: boolean; autoPace?: boolean },
 ): Promise<void> {
   const token = ++paceToken
   commandBusy = true
-  setCliBusy(true)
+  if (!opts?.softBusy) setCliBusy(true)
+  else setAutoHuntUi(true)
 
-  // Show typed input immediately
   let i = 0
   if (lines[0]?.kind === 'input') {
     state.messages.push(lines[0])
     refresh()
     i = 1
-    await sleep(leadDelay(pace, inCombat))
+    const lead = opts?.autoPace
+      ? applyAutoHuntPace(leadDelayBaseline(pace, inCombat))
+      : leadDelay(pace, inCombat)
+    await sleep(lead)
     if (token !== paceToken) return
   }
 
   for (; i < lines.length; i++) {
     if (token !== paceToken) return
     const msg = lines[i]
-    await sleep(lineDelay(pace, msg, i, inCombat))
+    const delay = opts?.autoPace
+      ? applyAutoHuntPace(lineDelayBaseline(pace, msg, i, inCombat))
+      : lineDelay(pace, msg, i, inCombat)
+    await sleep(delay)
     if (token !== paceToken) return
     state.messages.push(msg)
     refresh()
   }
 
   if (token !== paceToken) return
-  commandBusy = false
+  if (token === paceToken) {
+    commandBusy = false
+    if (!opts?.softBusy && !autoHuntRunning) {
+      setCliBusy(false)
+      focusCliDesktop()
+    } else if (opts?.softBusy && state.autoHunt) {
+      setAutoHuntUi(true)
+    } else if (!state.autoHunt) {
+      setAutoHuntUi(false)
+      setCliBusy(false)
+      focusCliDesktop()
+    }
+  }
+  refresh()
+}
+
+function setAutoHuntUi(on: boolean): void {
+  document.body.classList.toggle('auto-hunt', on)
+  const cli = document.querySelector<HTMLInputElement>('#cli')
+  if (cli) {
+    cli.disabled = false
+    cli.placeholder = on ? t('ui.autoPlaceholder') : t('ui.placeholder')
+  }
+}
+
+async function runAutoHuntLoop(): Promise<void> {
+  if (autoHuntRunning) return
+  if (!state.autoHunt) return
+  autoHuntRunning = true
+  const token = ++autoHuntToken
+  setAutoHuntUi(true)
+  refresh()
+
+  while (state.autoHunt && token === autoHuntToken) {
+    if (!ZONES[state.player.location]) {
+      state.autoHunt = false
+      pushMessage(state, 'system', t('ok.autoStopManual'))
+      break
+    }
+
+    const before = state.messages.length
+
+    if (state.mode === 'combat' && state.combat) {
+      const boss = MONSTERS[state.combat.monsterId]?.isBoss
+      if (boss) {
+        state.autoHunt = false
+        pushMessage(state, 'error', t('err.autoNoBoss'))
+        break
+      }
+
+      const result = autoCombatTurn(state)
+      if (result) {
+        for (const msg of result.messages) {
+          pushMessage(state, isErrorMsg(msg) ? 'error' : 'combat', msg)
+        }
+        applyCombatEnd(state, result)
+      }
+    } else {
+      performHunt(state)
+    }
+
+    const generated = state.messages.splice(before) as TerminalLine[]
+    await revealMessages(
+      generated,
+      state.mode === 'combat' ? 'combat' : 'search',
+      state.mode === 'combat',
+      { softBusy: true, autoPace: true },
+    )
+
+    if (token !== autoHuntToken) break
+    if (!state.autoHunt) break
+
+    await sleep(applyAutoHuntPace(400))
+    if (token !== autoHuntToken) break
+  }
+
+  autoHuntRunning = false
+  setAutoHuntUi(false)
   setCliBusy(false)
   refresh()
   focusCliDesktop()

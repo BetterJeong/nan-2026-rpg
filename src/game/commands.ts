@@ -2,6 +2,7 @@ import {
   findZone,
   getBossForZone,
   hasDefeatedBoss,
+  MONSTERS,
   requiredBossForZone,
   SHOP_CATALOG,
   SKILLS,
@@ -18,6 +19,7 @@ import {
   playerUseItem,
   resolveSkillQuery,
   startCombat,
+  type CombatResult,
 } from './combat'
 import {
   addItem,
@@ -101,6 +103,8 @@ function pick<T>(arr: T[]): T {
 export type CommandResult = {
   state: GameState
   refreshUi: boolean
+  /** Kick off async auto-hunt loop in the UI shell */
+  startAutoHunt?: boolean
 }
 
 export function handleCommand(state: GameState, raw: string): CommandResult {
@@ -132,6 +136,7 @@ export function handleCommand(state: GameState, raw: string): CommandResult {
     state.mode = 'idle'
     state.combat = null
     state.townSocial = null
+    state.autoHunt = false
     pushMessage(state, 'success', t('ok.adminTest'))
     pushMessage(state, 'system', t('ok.adminTestHint'))
     return { state, refreshUi: true }
@@ -507,7 +512,7 @@ export function handleCommand(state: GameState, raw: string): CommandResult {
     case 'home':
       state.player.location = 'town'
       state.townSocial = null
-      pushMessage(state, 'success', t('ok.town'))
+      pushMessage(state, 'success', t('ok.townShort'))
       break
 
     case 'lookaround':
@@ -579,8 +584,25 @@ export function handleCommand(state: GameState, raw: string): CommandResult {
     case 'search':
       return handleHunt(state)
 
+    case 'auto':
+    case 'autohunt':
+    case '자동전투': {
+      if (arg === 'stop' || arg === 'off' || arg === 'end' || arg === '중지') {
+        return handleAutoStop(state)
+      }
+      return handleAutoStart(state)
+    }
+
+    case 'stop':
+    case '중지':
+      return handleAutoStop(state)
+
     case 'boss':
     case 'challenge':
+      if (state.autoHunt) {
+        state.autoHunt = false
+        pushMessage(state, 'system', t('ok.autoStopManual'))
+      }
       return handleBoss(state)
 
     case 'shop':
@@ -670,6 +692,10 @@ function handleCombatCommand(state: GameState, c: string, arg: string): CommandR
     return { state, refreshUi: true }
   }
 
+  if (c === 'stop' || c === '중지' || (c === 'auto' && (arg === 'stop' || arg === '중지' || arg === 'off'))) {
+    return handleAutoStop(state)
+  }
+
   if (c === 'help' || c === '?') {
     pushMessage(state, 'system', t('combat.help'))
     return { state, refreshUi: true }
@@ -753,17 +779,29 @@ function handleCombatCommand(state: GameState, c: string, arg: string): CommandR
     pushMessage(state, kind, msg)
   }
 
-  if (result.ended) {
-    state.mode = 'idle'
-    state.combat = null
-    if (result.victory) {
-      pushMessage(state, 'success', t('ok.victory'))
-    } else if (result.fled) {
-      pushMessage(state, 'system', t('ok.fled'))
-    }
-  }
+  applyCombatEnd(state, result)
 
   return { state, refreshUi: true }
+}
+
+/** Apply combat result messages end-state (shared with auto-hunt). */
+export function applyCombatEnd(state: GameState, result: CombatResult): void {
+  if (!result.ended) return
+  state.mode = 'idle'
+  state.combat = null
+  if (result.victory) {
+    pushMessage(state, 'success', t('ok.victory'))
+  } else if (result.fled) {
+    pushMessage(state, 'system', t('ok.fled'))
+  } else if (state.autoHunt) {
+    state.autoHunt = false
+    pushMessage(state, 'system', t('ok.autoStopDeath'))
+  }
+}
+
+/** Hunt encounter for auto-loop (no extra wrappers). */
+export function performHunt(state: GameState): void {
+  handleHunt(state)
 }
 
 function normalizeChoiceQuery(s: string): string {
@@ -1091,10 +1129,37 @@ function handleGo(state: GameState, query: string): CommandResult {
     'success',
     t('ok.arrived', { zone: zoneLabel(zone.id), desc: zoneDesc(zone.id) }),
   )
-  pushMessage(state, 'system', t('ok.huntHint'))
-  if (getBossForZone(zone.id)) {
-    pushMessage(state, 'system', t('ok.bossHint'))
+  return { state, refreshUi: true }
+}
+
+function handleAutoStart(state: GameState): CommandResult {
+  if (!ZONES[state.player.location]) {
+    pushMessage(state, 'error', t('err.autoZoneOnly'))
+    return { state, refreshUi: true }
   }
+  if (state.mode === 'combat' && state.combat) {
+    const m = MONSTERS[state.combat.monsterId]
+    if (m?.isBoss) {
+      pushMessage(state, 'error', t('err.autoNoBoss'))
+      return { state, refreshUi: true }
+    }
+  }
+  if (state.autoHunt) {
+    pushMessage(state, 'system', t('ok.autoAlready'))
+    return { state, refreshUi: true }
+  }
+  state.autoHunt = true
+  pushMessage(state, 'success', t('ok.autoStart'))
+  return { state, refreshUi: true, startAutoHunt: true }
+}
+
+function handleAutoStop(state: GameState): CommandResult {
+  if (!state.autoHunt) {
+    pushMessage(state, 'error', t('err.autoNotRunning'))
+    return { state, refreshUi: true }
+  }
+  state.autoHunt = false
+  pushMessage(state, 'success', t('ok.autoStopManual'))
   return { state, refreshUi: true }
 }
 
@@ -1127,7 +1192,7 @@ function handleHunt(state: GameState): CommandResult {
     state.combat = startCombat(mid)
     state.mode = 'combat'
     for (const line of state.combat.log) pushMessage(state, 'combat', line)
-    if (shouldShowCombatHints()) {
+    if (shouldShowCombatHints() && !state.autoHunt) {
       pushMessage(state, 'system', t('combat.cmds'))
     }
   } else if (roll < 0.9) {
@@ -1385,13 +1450,9 @@ function formatInventory(state: GameState): string {
   const p = state.player
   if (!p.inventory.length) return t('inv.empty')
   const lines = [t('inv.head', { n: p.inventory.length, gold: p.gold }), '------------']
-  let firstGearName: string | null = null
   for (const e of p.inventory) {
     const item = getItem(e.itemId)
     if (!item) continue
-    if (!firstGearName && item.kind === 'equipment') {
-      firstGearName = item.name
-    }
     lines.push(
       t('inv.line', {
         kind: itemKindLabel(item),
@@ -1401,12 +1462,6 @@ function formatInventory(state: GameState): string {
         sell: item.sellPrice,
       }),
     )
-  }
-  lines.push('------------')
-  if (firstGearName) {
-    lines.push(t('inv.hint', { example: firstGearName }))
-  } else {
-    lines.push(t('inv.hintNone'))
   }
   return lines.join('\n')
 }
@@ -1441,11 +1496,7 @@ function formatLook(state: GameState): string {
   if (loc === 'shop') return t('look.shop')
   const zone = ZONES[loc]
   if (zone) {
-    const lines = [t('look.zone', { zone: zoneLabel(loc), desc: zoneDesc(loc) })]
-    if (getBossForZone(loc)) {
-      lines.push(t('look.bossHint'))
-    }
-    return lines.join('\n')
+    return t('look.zone', { zone: zoneLabel(loc), desc: zoneDesc(loc) })
   }
   return t('look.pwd', { loc })
 }

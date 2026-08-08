@@ -143,6 +143,9 @@ export function getSuggestChips(state: GameState): SuggestChip[] {
   }
 
   if (state.mode === 'combat' && state.combat) {
+    if (state.autoHunt) {
+      return [{ cmd: 'stop', label: 'stop' }].slice(0, MAX_CHIPS)
+    }
     const chips: SuggestChip[] = [{ cmd: 'attack', label: 'attack' }]
     // Prefer the most recently unlocked skill (skills are appended on unlock)
     const skills = state.player.skills
@@ -224,6 +227,13 @@ export function getSuggestChips(state: GameState): SuggestChip[] {
       { cmd: 'status', label: 'status' },
     ])
   } else if (ZONES[loc]) {
+    if (state.autoHunt) {
+      return [{ cmd: 'stop', label: 'stop' }, { cmd: 'status', label: 'status' }].slice(
+        0,
+        MAX_CHIPS,
+      )
+    }
+    chips.push({ cmd: 'auto', label: 'auto' })
     chips.push({ cmd: 'hunt', label: 'hunt' })
     if (getBossForZone(loc)) {
       chips.push({ cmd: 'boss', label: 'boss' })
