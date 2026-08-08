@@ -137,59 +137,103 @@ const SLOT_KO: Record<EquipSlot, string> = {
 type Dict = Record<string, string>
 
 const EN: Dict = {
-  'help.body': `available commands
+  'help.indexHead': `help
 ────────────────────────
-[travel]
-  go <zone>       enter a hunting zone
-  hunt / explore  search current zone
-  auto / autohunt auto-hunt (stop to cancel)
-  boss / challenge  challenge the zone boss
-  lookaround      see who is around in town
-  talk <name>     talk to someone
-  npcs            same as lookaround
-  town / cd ~     return to town
-  shop            enter shop
-  rest            recover HP/MP (town)
+topics:`,
+  'help.indexFoot': `usage: help <topic>
+  also: help <skill> | help <item> | help <zone>
+  e.g. help combat · help slash · help hp-potion-s`,
+  'help.topicLine.travel': '  travel   — go / hunt / zones / boss / auto',
+  'help.topicLine.combat': '  combat   — attack / skill / defend / flee',
+  'help.topicLine.skills': '  skills   — unlocks & casting',
+  'help.topicLine.items': '  items    — equip / use / shop',
+  'help.topicLine.town': '  town     — lookaround / talk / rest',
+  'help.topicLine.status': '  status   — stats / inv / name',
+  'help.topicLine.system': '  system   — save / lang / settings',
+  'help.topic.travel': `[travel]
+  go <zone>        enter a hunting zone (see: zones)
+  hunt / explore   search the current zone
+  auto / autohunt  auto-hunt (stop / 중지 to cancel)
+  boss / challenge challenge the zone boss (apex zones)
+  town / cd ~      return to town
+  zones            list hunting zones
 
-[status]
-  status / st     stats + equipment
-  inv / inventory inventory
-  skills          skills
-  look / ls       current location
-  zones           hunting zones
-  name / rename   change nickname
+tips: higher zones need level — and sometimes a cleared boss.
+try: help mistwood · help zones`,
+  'help.topic.combat': `[combat]
+  attack / a       basic attack
+  skill <name>     cast a skill (costs MP)
+  defend / d       brace for the next hit
+  use <potion>     use a consumable
+  flee             try to escape (bosses resist)
 
-[items]
-  equip <name>    equip
-  unequip <slot>  unequip
-  use <name>      use consumable
-  buy <name|#>    buy
-  sell <name> [n] sell
-  shop list       shop catalog
+in battle you can still: status · inv · skills · help · save
+try: help skills · help slash`,
+  'help.topic.skills': `[skills]
+  skills           list known (and locked) skills
+  skill <name>     cast in combat
 
-[combat]
-  attack / a      attack
-  skill <name>    skill
-  defend / d      defend
-  use <potion>    use item
-  flee            flee
+skills unlock by level. help <skill> shows the effect.
+try: help mend · help bash`,
+  'help.topic.items': `[items]
+  inv / inventory  bag contents
+  equip <name>     wear gear
+  unequip <slot>   remove gear
+  use <name>       use a consumable
+  shop / shop list open shop catalog
+  buy <name|#>     buy
+  sell <name> [n]  sell
 
-[system]
-  help            this help
-  save / load     save / load
-  lang <en|ko>    language
-  settings        settings
-  theme <mode>    dark | light
-  fontsize <n>    font size
-  inspector on|off
-  hud on|off
-  explorer compact|normal
-  hints on|off
-  fast on|off     message pacing
-  autosave [min]  autosave (1-60)
-  clear / cls     clear screen
-  history         history
-  reset           new game`,
+help <item> shows stats & prices.
+try: help wood-sword · help hp-potion-s`,
+  'help.topic.town': `[town]
+  lookaround       see who is in town
+  talk <name>      talk (then reply 1/2/3)
+  rest             recover HP/MP
+  shop             enter the shop
+
+people change each lookaround. affinity grows with good replies.`,
+  'help.topic.status': `[status]
+  status / st      stats & equipment
+  inv / inventory  inventory
+  skills           skills
+  look / ls        where you are
+  zones            hunting zones
+  name / rename    change nickname`,
+  'help.topic.system': `[system]
+  save / load      save or load
+  autosave [min]   autosave interval (1-60)
+  lang <en|ko>     language
+  settings         settings UI
+  theme dark|light
+  fast on|off      message pacing
+  fontsize <n>     terminal font size
+  hints on|off     combat command hints
+  clear / history / reset`,
+  'help.skillDetail': `[skill] {name}
+  {effect}
+  {owned}
+  cast: skill {name}`,
+  'help.skillOwned': 'owned',
+  'help.skillLocked': 'locked (Lv.{level}+)',
+  'help.itemDetail': `[item] {name}
+  {kind} · {stats}
+  {desc}
+  {prices}
+  {owned}{equipped}`,
+  'help.itemBuy': 'buy {price}G',
+  'help.itemSell': 'sell {price}G',
+  'help.itemNoPrice': 'no shop price',
+  'help.itemOwned': 'in bag x{qty}',
+  'help.itemNotOwned': 'not in bag',
+  'help.itemEquipped': ' · equipped',
+  'help.zoneDetail': `[zone] {name} (Lv.{level}+)
+  {desc}
+  enter: go {name}
+  then: hunt · auto · (boss if available)`,
+  'help.unknown': 'help: unknown topic "{q}" — try help',
+  'combat.help': `[combat] attack | skill <name> | defend | use | flee
+  more: help combat · help skills`,
 
   'welcome.title': 'DevQuest — Terminal RPG',
   'welcome.hint': 'type help — or tap a chip below',
@@ -300,7 +344,6 @@ const EN: Dict = {
   'ok.lootGold': 'found gold pouch: +{gold}G (wallet {total}G)',
 
   'combat.cmds': 'cmds: attack | skill <name> | defend | use <potion> | flee',
-  'combat.help': 'combat: attack(a) | skill <name> | defend(d) | use <potion> | flee | status | inv',
   'combat.saveNote': '(combat state is not saved)',
     'combat.appearBoss': 'BOSS {name} (Lv.{level}) appears!',
 'combat.appear': 'A wild {name} (Lv.{level}) appears!',
@@ -438,7 +481,7 @@ const EN: Dict = {
   'ui.empty': '(empty)',
   'ui.combatTarget': 'Combat Target',
   'ui.hudCombat': 'IN COMBAT',
-  'ui.placeholder': 'type help to see commands',
+  'ui.placeholder': 'type help · help combat · help slash',
   'ui.searchSettings': 'Search settings',
   'ui.close': 'Close',
   'ui.appearance': 'Appearance',
@@ -476,59 +519,103 @@ const EN: Dict = {
 }
 
 const KO: Dict = {
-  'help.body': `사용 가능 명령어
+  'help.indexHead': `help
 ────────────────────────
-[이동]
-  go <장소>       사냥터 이동
-  hunt / explore  사냥터 탐색
-  auto / 자동전투 자동전투 (stop 으로 종료)
-  boss / challenge  보스 도전
-  둘러보기        마을 사람들 보기
-  talk <이름>     대화
-  npcs            둘러보기와 동일
-  town / cd ~     마을로
-  shop            상점
-  rest            휴식 (마을)
+주제:`,
+  'help.indexFoot': `usage: help <주제>
+  또는: help <스킬> | help <아이템> | help <사냥터>
+  예: help 전투 · help slash · help hp-potion-s`,
+  'help.topicLine.travel': '  이동     — go / hunt / zones / boss / auto',
+  'help.topicLine.combat': '  전투     — attack / skill / defend / flee',
+  'help.topicLine.skills': '  스킬     — 해금과 사용',
+  'help.topicLine.items': '  아이템   — 장착 / 사용 / 상점',
+  'help.topicLine.town': '  마을     — 둘러보기 / talk / rest',
+  'help.topicLine.status': '  상태     — status / inv / name',
+  'help.topicLine.system': '  시스템   — save / lang / settings',
+  'help.topic.travel': `[이동]
+  go <장소>        사냥터 이동 (zones 로 목록)
+  hunt / explore   현재 사냥터 탐색
+  auto / 자동전투  자동전투 (stop / 중지로 종료)
+  boss / challenge 보스 도전 (상한 존)
+  town / cd ~      마을로
+  zones            사냥터 목록
 
-[상태]
-  status / st     능력치·장비
-  inv / inventory 인벤토리
-  skills          스킬
-  look / ls       현재 위치
-  zones           사냥터 목록
-  name / 닉네임   닉네임 변경
+높은 존은 레벨·보스 클리어가 필요할 수 있어요.
+예: help 안개숲 · help 이동`,
+  'help.topic.combat': `[전투]
+  attack / a       기본 공격
+  skill <이름>     스킬 (MP 소모)
+  defend / d       방어 자세
+  use <포션>       소모품 사용
+  flee             도망 (보스는 어렵습니다)
 
-[아이템]
-  equip <name>    장착
-  unequip <slot>  해제
-  use <name>      소모품 사용
-  buy <name|#>    구매
-  sell <name> [n] 판매
-  shop list       상점 목록
+전투 중에도: status · inv · skills · help · save
+예: help 스킬 · help slash`,
+  'help.topic.skills': `[스킬]
+  skills           보유/미해금 스킬 목록
+  skill <이름>     전투 중 사용
 
-[전투]
-  attack / a      공격
-  skill <name>    스킬
-  defend / d      방어
-  use <potion>    아이템
-  flee            도망
+레벨이 오르면 스킬이 해금됩니다. help <스킬> 로 효과 확인.
+예: help mend · help bash`,
+  'help.topic.items': `[아이템]
+  inv / inventory  인벤토리
+  equip <이름>     장비 장착
+  unequip <슬롯>   장비 해제
+  use <이름>       소모품 사용
+  shop / shop list 상점
+  buy <이름|#>     구매
+  sell <이름> [n]  판매
 
-[시스템]
-  help            이 도움말
-  save / load     저장 / 불러오기
-  lang <en|ko>    언어
-  settings        설정
-  theme <mode>    dark | light
-  fontsize <n>    글자 크기
-  inspector on|off
-  hud on|off
-  explorer compact|normal
-  hints on|off
-  fast on|off     메시지 속도
-  autosave [min]  자동저장 (1-60분)
-  clear / cls     화면 지우기
-  history         명령 기록
-  reset           새 게임`,
+help <아이템> 으로 스탯·가격을 볼 수 있어요.
+예: help wood-sword · help hp-potion-s`,
+  'help.topic.town': `[마을]
+  둘러보기         마을에 있는 사람 보기
+  talk <이름>      대화 (답변 1/2/3)
+  rest             HP/MP 회복
+  shop             상점
+
+둘러볼 때마다 사람이 달라질 수 있어요. 좋은 답이 호감을 올립니다.`,
+  'help.topic.status': `[상태]
+  status / st      능력치·장비
+  inv / inventory  인벤토리
+  skills           스킬
+  look / ls        현재 위치
+  zones            사냥터
+  name / 닉네임    닉네임 변경`,
+  'help.topic.system': `[시스템]
+  save / load      저장 / 불러오기
+  autosave [분]    자동저장 간격 (1-60)
+  lang <en|ko>     언어
+  settings         설정 화면
+  theme dark|light
+  fast on|off      메시지 속도
+  fontsize <n>     글자 크기
+  hints on|off     전투 명령 힌트
+  clear / history / reset`,
+  'help.skillDetail': `[스킬] {name}
+  {effect}
+  {owned}
+  사용: skill {name}`,
+  'help.skillOwned': '보유 중',
+  'help.skillLocked': '미해금 (Lv.{level}+)',
+  'help.itemDetail': `[아이템] {name}
+  {kind} · {stats}
+  {desc}
+  {prices}
+  {owned}{equipped}`,
+  'help.itemBuy': '구매 {price}G',
+  'help.itemSell': '매입 {price}G',
+  'help.itemNoPrice': '상점가 없음',
+  'help.itemOwned': '가방 x{qty}',
+  'help.itemNotOwned': '가방에 없음',
+  'help.itemEquipped': ' · 장착 중',
+  'help.zoneDetail': `[사냥터] {name} (Lv.{level}+)
+  {desc}
+  이동: go {name}
+  이후: hunt · auto · (가능하면 boss)`,
+  'help.unknown': 'help: 알 수 없는 주제 "{q}" — help 를 입력해 보세요',
+  'combat.help': `[전투] attack | skill <이름> | defend | use | flee
+  더보기: help 전투 · help 스킬`,
 
   'welcome.title': 'DevQuest — Terminal RPG',
   'welcome.hint': 'help 입력 — 또는 아래 칩을 눌러 보세요',
@@ -639,7 +726,6 @@ const KO: Dict = {
   'ok.lootGold': '골드 획득: +{gold}G (보유 {total}G)',
 
   'combat.cmds': '명령: attack | skill <name> | defend | use <potion> | flee',
-  'combat.help': '전투: attack(a) | skill <name> | defend(d) | use <potion> | flee | status | inv',
   'combat.saveNote': '(전투 상태는 저장되지 않습니다)',
     'combat.appearBoss': '보스 {name} (Lv.{level}) 출현!',
 'combat.appear': '야생의 {name} (Lv.{level}) 출현!',
@@ -777,7 +863,7 @@ const KO: Dict = {
   'ui.empty': '(비어 있음)',
   'ui.combatTarget': '전투 대상',
   'ui.hudCombat': '전투중',
-  'ui.placeholder': 'help 입력으로 명령어 보기',
+  'ui.placeholder': 'help · help 전투 · help slash',
   'ui.searchSettings': '설정 검색',
   'ui.close': '닫기',
   'ui.appearance': '외관',

@@ -10,6 +10,7 @@ import {
   expToNext,
 } from './data/content'
 import { formatItemStats, getItem, ITEMS } from './data/items'
+import { formatHelp } from './help'
 import {
   findConsumableId,
   playerAttack,
@@ -162,7 +163,8 @@ export function handleCommand(state: GameState, raw: string): CommandResult {
     case 'help':
     case '?':
     case 'man':
-      pushMessage(state, 'system', t('help.body'))
+    case '도움말':
+      pushMessage(state, 'system', formatHelp(state, arg))
       break
 
     case 'clear':
@@ -696,8 +698,8 @@ function handleCombatCommand(state: GameState, c: string, arg: string): CommandR
     return handleAutoStop(state)
   }
 
-  if (c === 'help' || c === '?') {
-    pushMessage(state, 'system', t('combat.help'))
+  if (c === 'help' || c === '?' || c === 'man' || c === '도움말') {
+    pushMessage(state, 'system', formatHelp(state, arg))
     return { state, refreshUi: true }
   }
   if (c === 'status' || c === 'st') {

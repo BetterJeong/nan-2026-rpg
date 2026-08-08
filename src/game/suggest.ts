@@ -1,6 +1,7 @@
 import { BOSS_BY_ZONE, getBossForZone, hasDefeatedBoss, requiredBossForZone, ZONES } from './data/content'
 import { getItem } from './data/items'
 import { NPCS, npcLabel } from './data/npcs'
+import { helpSuggestChips } from './help'
 import { goCmd, lookaroundCmd } from './i18n'
 import type { GameState } from './types'
 import { getEffectiveMaxHp, getEffectiveMaxMp } from './player'
@@ -140,6 +141,21 @@ export function getSuggestChips(state: GameState): SuggestChip[] {
       { cmd: 'theme dark', label: 'theme dark' },
       { cmd: 'theme light', label: 'theme light' },
     ].slice(0, MAX_CHIPS)
+  }
+
+  const last = lastRawCmd(state)
+  if (
+    last === 'help' ||
+    last === '?' ||
+    last === 'man' ||
+    last === '도움말' ||
+    last.startsWith('help ') ||
+    last.startsWith('man ') ||
+    last.startsWith('? ') ||
+    last.startsWith('도움말 ')
+  ) {
+    const arg = last.replace(/^(help|man|\?|도움말)\s*/i, '')
+    return prependLangPicker(helpSuggestChips(arg).slice(0, MAX_CHIPS))
   }
 
   if (state.mode === 'combat' && state.combat) {
